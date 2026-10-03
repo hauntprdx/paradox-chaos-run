@@ -693,14 +693,80 @@ function draw(){
    ctx.fillRect(x+10,H-120-h-20,5,20);
  }
 
- // platforms
+ // platforms: Galaxy B/C hybrid metallic-ice texture
  for(const p of platforms){
    const x=p.x-world-viewLookAhead();
-   if(x>W+50||x+p.w<-50)continue;
-   ctx.fillStyle='#27195b';ctx.fillRect(x,p.y,p.w,p.h);
-   ctx.fillStyle='#8e56e8';ctx.fillRect(x,p.y,p.w,5);
-   ctx.fillStyle='#4e2e91';
-   for(let xx=x+8;xx<x+p.w;xx+=30)ctx.fillRect(xx,p.y+12,15,4);
+   if(x>W+60||x+p.w<-60)continue;
+
+   // main body
+   ctx.fillStyle='#1f2547';
+   ctx.fillRect(x,p.y,p.w,p.h);
+
+   // cold metal face
+   ctx.fillStyle='#2f3b6a';
+   ctx.fillRect(x+2,p.y+4,p.w-4,p.h-6);
+
+   // icy top cap and reflective lip
+   ctx.fillStyle='#dff9ff';
+   ctx.fillRect(x,p.y,p.w,3);
+   ctx.fillStyle='#8ceaff';
+   ctx.fillRect(x,p.y+3,p.w,3);
+   ctx.fillStyle='#9f6fff';
+   ctx.fillRect(x,p.y+6,p.w,2);
+
+   // lower shadow / depth
+   ctx.fillStyle='#151a33';
+   ctx.fillRect(x,p.y+p.h-5,p.w,5);
+
+   // metallic panels and frozen patches
+   for(let xx=x+10;xx<x+p.w-12;xx+=34){
+     ctx.fillStyle='#415182';
+     ctx.fillRect(xx,p.y+12,18,6);
+     ctx.fillStyle='#6d82b6';
+     ctx.fillRect(xx+2,p.y+13,8,2);
+
+     ctx.fillStyle='rgba(194,246,255,0.55)';
+     ctx.fillRect(xx-3,p.y+22,11,4);
+   }
+
+   // glowing seams
+   for(let xx=x+18;xx<x+p.w-10;xx+=52){
+     ctx.fillStyle='rgba(129,235,255,0.8)';
+     ctx.fillRect(xx,p.y+8,2,p.h-14);
+     ctx.fillStyle='rgba(191,130,255,0.55)';
+     ctx.fillRect(xx+2,p.y+10,1,p.h-18);
+   }
+
+   // subtle crack lines / frozen fractures
+   ctx.strokeStyle='rgba(211,247,255,0.22)';
+   ctx.lineWidth=1;
+   for(let xx=x+22;xx<x+p.w-14;xx+=46){
+     ctx.beginPath();
+     ctx.moveTo(xx,p.y+10);
+     ctx.lineTo(xx+5,p.y+16);
+     ctx.lineTo(xx-1,p.y+23);
+     ctx.lineTo(xx+6,p.y+30);
+     ctx.stroke();
+   }
+
+   // hanging shards for extra world flavor
+   for(let xx=x+16;xx<x+p.w-20;xx+=60){
+     const drop=8+((Math.floor(xx+p.x)*7)%10);
+     ctx.fillStyle='#7ae6ff';
+     ctx.beginPath();
+     ctx.moveTo(xx,p.y+p.h-1);
+     ctx.lineTo(xx+4,p.y+p.h+drop);
+     ctx.lineTo(xx+8,p.y+p.h-1);
+     ctx.closePath();
+     ctx.fill();
+   }
+
+   // tiny floating debris under some longer platforms
+   if(p.w>170){
+     ctx.fillStyle='rgba(139,235,255,0.5)';
+     ctx.fillRect(x+26,p.y+p.h+10,4,4);
+     ctx.fillRect(x+p.w-36,p.y+p.h+16,3,3);
+   }
  }
 
  // hazards
