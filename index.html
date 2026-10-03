@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><title>PARADOX // COSMIC RUN</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050313;font-family:monospace}
+  body{touch-action:none}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#050313}
+  canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+  #hud{position:fixed;left:14px;top:12px;color:white;text-shadow:3px 3px #13091f;pointer-events:none;z-index:3}
+  #title{font-size:18px;font-weight:900;letter-spacing:2px}
+  #score{font-size:14px;margin-top:5px}
+  #meter{margin-top:8px;width:180px;height:13px;border:2px solid white;background:#170d28;box-shadow:3px 3px #08050d}
+  #fill{height:100%;width:0%;background:linear-gradient(90deg,#9b43ff,#fff);transition:width .18s ease-out}
+  #beam{font-size:12px;margin-top:5px;color:#fff;opacity:.8}
+  #help{position:fixed;right:14px;top:13px;color:#fff;font-size:11px;text-align:right;line-height:1.45;text-shadow:2px 2px #13091f;pointer-events:none}
+  #start,#over{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;background:rgba(4,2,14,.72)}
+  .panel{width:min(430px,88vw);padding:24px;text-align:center;border:3px solid white;background:#0d0920;box-shadow:8px 8px #020107;color:white}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:2px}
+  p{font-size:13px;line-height:1.5;margin:10px 0 18px}
+  button{font:900 14px monospace;color:white;background:#24134b;border:3px solid white;padding:12px 20px;box-shadow:5px 5px #000;touch-action:none}
+  button:active{transform:translate(3px,3px);box-shadow:2px 2px #000}
+  #controls{position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;padding:0 14px;z-index:4;pointer-events:none}
+  .ctrl{pointer-events:auto;width:78px;height:62px;border:3px solid white;background:rgba(18,10,40,.78);color:white;font:900 13px monospace;box-shadow:4px 4px #000}
+  #dash{width:108px}
+  .hide{display:none!important}
+  #flash{position:fixed;inset:0;background:white;opacity:0;pointer-events:none;z-index:6}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game"></canvas></div>
+
+<div id="hud">
+  <div id="title">PARADOX // COSMIC RUN</div>
+  <div id="score">SCORE 000000</div>
+  <div id="meter"><div id="fill"></div></div>
+  <div id="beam">CHAOS METER: CRASH TO CHARGE</div>
+</div>
+<div id="help">TAP = JUMP<br>2ND TAP = DOUBLE JUMP<br>SWIPE RIGHT = HEADBUTT<br>CRASH THINGS = CHAOS</div>
+
+<div id="controls">
+  <button class="ctrl" id="jump">JUMP</button>
+  <button class="ctrl" id="dash">HEADBUTT →</button>
+</div>
+
+<div id="start">
+  <div class="panel">
+    <h1>CHAOS RUN</h1>
+    <p>Paradox is entering the galaxy.<br><br>
+    Tap anywhere to jump. Tap again in the air for a double jump.<br>
+    Swipe right or hit HEADBUTT to smash through cosmic junk.</p>
+    <button id="play">START RUN</button>
+  </div>
+</div>
+
+<div id="over" class="hide">
+  <div class="panel">
+    <h1>VOID CLAIMED YOU</h1>
+    <p id="final">SCORE 000000</p>
+    <button id="restart">RUN IT BACK</button>
+  </div>
+</div>
+<div id="flash"></div>
+
+<script>
+(() => {
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+let W=0,H=0,dpr=1;
+function resize(){
+  dpr=Math.min(devicePixelRatio||1,2);
+  W=innerWidth; H=innerHeight;
+  c.width=Math.floor(W*dpr); c.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize',resize); resize();
+
+const scoreEl=document.getElementById('score');
+const fill=document.getElementById('fill');
+const beamEl=document.getElementById('beam');
+const start=document.getElementById('start'), over=document.getElementById('over');
+const flash=document.getElementById('flash');
+
+let running=false, dead=false, last=0, score=0, best=Number(localStorage.getItem('paradoxBest')||0);
+let world=0, speed=280, chaos=0, beam=0, shake=0, spawnX=0, speedMult=1, nextSpeedScore=72;
+const HOME_X=108, DASH_MAX_X=285;
+let platforms=[], hazards=[], particles=[], stars=[], narwhal=null, narwhalTimer=0;
+let pointer={x:0,y:0,t:0};
+
+const P={
+ x:130,y:0,w:44,h:62,vy:0,onGround:false,jumps:0,coyote:0,
+ dash:0,dashCooldown:0,invuln:0
+};
+
+function reset(){
+ running=true; dead=false; score=0; world=0; speed=280; chaos=0; beam=0; shake=0; speedMult=1; nextSpeedScore=72;
+ particles=[]; hazards=[]; narwhal=null; narwhalTimer=0;
+ P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0;
+ const floorY=H-115;
+ platforms=[
+   {x:-200,y:floorY,w:1250,h:45},
+   {x:1080,y:floorY-55,w:400,h:45},
+   {x:1510,y:floorY-110,w:390,h:45},
+   {x:1930,y:floorY-35,w:500,h:45},
+   {x:2460,y:floorY-120,w:430,h:45},
+   {x:2920,y:floorY-20,w:650,h:45},
+   {x:3600,y:floorY-95,w:520,h:45}
+ ];
+ spawnX=620;
+ stars=Array.from({length:150},()=>({x:Math.random()*5000,y:Math.random()*H*.72,r:Math.random()*1.8+.4,s:Math.random()*.8+.2}));
+ start.classList.add('hide'); over.classList.add('hide');
+}
+
+function jump(){
+ if(!running||dead)return;
+ if(P.onGround || P.coyote>0){
+   P.vy=-650; P.onGround=false; P.coyote=0; P.jumps=1; burst(P.x+20,P.y+P.h,6,'#ffffff');
+   return;
+ }
+ if(P.jumps===1){
+   P.vy=-590; P.jumps=2; burst(P.x+20,P.y+P.h,10,'#b77cff');
+   
+ }
+}
+
+function dash(){
+ if(!running||dead||P.dashCooldown>0)return;
+ P.dash=.28; P.dashCooldown=.65; P.invuln=.32;
+ burst(P.x+P.w/2,P.y+P.h/2,12,'#ffffff');
+}
+
+function burst(x,y,n,col){
+ for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*240,life:.4+Math.random()*.5,col});
+}
+
+function ensureWorld(){
+ const lastP=platforms[platforms.length-1];
+ if(lastP.x < world+W+900){
+   let x=lastP.x+lastP.w+55+Math.random()*80;
+   let y=Math.max(H-250, Math.min(H-80,lastP.y+(Math.random()-.5)*90));
+   let w=260+Math.random()*300;
+   platforms.push({x,y,w,h:45});
+   if(Math.random()<.82){
+     const r=Math.random();
+     const type=r<.42?'table':r<.72?'enemy':r<.90?'crystal':'barrier';
+     const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:46;
+     const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:52;
+     hazards.push({x:x+w*.45,y:y-hh,w:ww,h:hh,type,alive:true});
+   }
+   if(Math.random()<.42){
+     const type=Math.random()<.55?'crystal':'table';
+     const hh=type==='crystal'?35:34, ww=type==='crystal'?34:48;
+     hazards.push({x:x+w*.76,y:y-hh,w:ww,h:hh,type,alive:true});
+   }
+ }
+ platforms=platforms.filter(p=>p.x+p.w>world-300);
+ hazards=hazards.filter(h=>h.x>world-400 && h.alive);
+}
+
+function rectHit(a,b){
+ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+}
+
+function update(dt){
+ if(!running||dead)return;
+ dt=Math.min(dt,.032);
+ const beamActive=beam>0;
+ if(!beamActive && score>=nextSpeedScore){
+   speedMult*=1.04+Math.random()*0.02;
+   nextSpeedScore+=50+Math.random()*35;
+   shake=Math.max(shake,.10);
+ }
+ speed=beamActive?(280*speedMult*1.78):(280*speedMult);
+ world+=speed*dt;
+ score+=dt*(beamActive?28:10);
+
+ P.dashCooldown=Math.max(0,P.dashCooldown-dt);
+ P.invuln=Math.max(0,P.invuln-dt);
+ P.coyote=Math.max(0,P.coyote-dt);
+
+ const wasGround=P.onGround;
+ P.onGround=false;
+ P.vy += 1750*dt;
+ P.y += P.vy*dt;
+
+ ensureWorld();
+
+ let landed=false;
+ for(const p of platforms){
+   if(P.x+P.w>p.x-world && P.x<p.x+p.w-world &&
+      P.y+P.h>=p.y && P.y+P.h<=p.y+Math.max(25,P.vy*dt+8) && P.vy>=0){
+      P.y=p.y-P.h; P.vy=0; P.onGround=true; P.jumps=0; landed=true; break;
+   }
+ }
+ if(wasGround&&!landed)P.coyote=.12;
+
+ if(P.dash>0){
+   P.dash-=dt;
+   // Headbutt gives a short forward lunge. When it ends, the scrolling world
+   // catches back up and pulls Paradox toward his normal left-side running position.
+   P.x=Math.min(P.x+Math.min(150,speed*.55)*dt, DASH_MAX_X);
+ } else {
+   // The camera/world catches up after the dash. Paradox should never drift
+   // toward the center just because several headbutts were chained together.
+   const returnRate=12;
+   P.x += (HOME_X-P.x)*Math.min(1,returnRate*dt);
+ }
+   for(const h of hazards){
+     const hh={x:h.x-world,y:h.y,w:h.w,h:h.h};
+     if(h.alive && rectHit(P,hh)){
+       h.alive=false;
+       const chaosGain = h.type==='table' ? 9 : h.type==='enemy' ? 17 : h.type==='crystal' ? 35 : 23;
+       const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : 150;
+       score+=scoreGain; chaos=Math.min(100,chaos+chaosGain);
+       shake=h.type==='crystal'?10:7; burst(hh.x+hh.w/2,hh.y+hh.h/2, h.type==='crystal'?26:18, h.type==='crystal'?'#b56cff':'#fff');
+     }
+   }
+ }
+
+ const playerScreenX=P.x;
+ for(const h of hazards){
+   if(!h.alive)continue;
+   const hh={x:h.x-world,y:h.y,w:h.w,h:h.h};
+   if(rectHit({x:playerScreenX,y:P.y,w:P.w,h:P.h},hh) && P.invuln<=0){
+     die(); return;
+   }
+ }
+
+ if(P.y>H+160){ die(); return; }
+
+ if(chaos>=100 && beam<=0){
+   beam=3.5; chaos=0; shake=12; flash.style.opacity=.7;
+   setTimeout(()=>flash.style.opacity=0,90);
+   burst(P.x+20,P.y+30,30,'#fff');
+ }
+ if(beam>0){
+   beam-=dt;
+   chaos=Math.max(0,chaos);
+   if(Math.random()<.35)burst(P.x+Math.random()*50,P.y+Math.random()*60,2,'#b56cff');
+ }
+
+ for(const s of stars){
+   s.x-=speed*dt*s.s*.12;
+   if(s.x<world-100)s.x=world+W+Math.random()*400;
+ }
+ // Rare cosmic narwhal: a background-only Galaxy friend.
+ if(!narwhal){
+   narwhalTimer-=dt;
+   if(narwhalTimer<=0 && Math.random()<0.0045){
+     narwhal={x:world+W+180,y:80+Math.random()*H*.42,w:78,h:30,vx:55+Math.random()*35,life:6.5};
+   }
+   if(narwhalTimer<=0) narwhalTimer=2.2;
+ }else{
+   narwhal.x-=narwhal.vx*dt; narwhal.life-=dt;
+   if(narwhal.life<=0 || narwhal.x<world-150) narwhal=null;
+ }
+
+ for(const q of particles){
+   q.x+=q.vx*dt; q.y+=q.vy*dt; q.life-=dt; q.vy+=400*dt;
+ }
+ particles=particles.filter(q=>q.life>0);
+ shake*=Math.pow(.01,dt);
+}
+
+function die(){
+ if(dead)return;
+ dead=true; running=false;
+ burst(P.x+20,P.y+30,30,'#fff'); shake=18;
+ best=Math.max(best,Math.floor(score)); localStorage.setItem('paradoxBest',best);
+ document.getElementById('final').textContent=`SCORE ${String(Math.floor(score)).padStart(6,'0')}   BEST ${String(best).padStart(6,'0')}`;
+ over.classList.remove('hide');
+}
+
+function draw(){
+ ctx.save();
+ ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+ const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#07031c');g.addColorStop(1,'#18052c');ctx.fillStyle=g;ctx.fillRect(-20,-20,W+40,H+40);
+
+ // stars
+ for(const s of stars){
+   let sx=s.x-world;
+   if(sx<-20||sx>W+20)continue;
+   ctx.fillStyle=beam>0?'#fff':'#d8caff';ctx.fillRect(sx,s.y,s.r,s.r);
+ }
+ // nebula bands
+ ctx.globalAlpha=.18;
+ for(let i=0;i<5;i++){
+   ctx.fillStyle=i%2?'#7d32c9':'#2459d8';
+   ctx.beginPath();ctx.ellipse(W*.65+i*90,H*.25+i*50,260+i*50,90+i*25,0,0,Math.PI*2);ctx.fill();
+ }
+ ctx.globalAlpha=1;
+
+ // planets
+ const planets=[
+   {x:W*.76-(world*.045%900),y:H*.22,r:105},
+   {x:W*.23-(world*.025%1200),y:H*.34,r:48},
+   {x:W*1.05-(world*.07%1400),y:H*.58,r:70}
+ ];
+ planets.forEach((p,i)=>{
+   ctx.save();ctx.translate(p.x,p.y);
+   ctx.fillStyle=i===0?'#5937a8':i===1?'#d35cae':'#3162b7';
+   ctx.beginPath();ctx.arc(0,0,p.r,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle='#b98cff';ctx.lineWidth=8;ctx.globalAlpha=.65;
+   ctx.beginPath();ctx.ellipse(0,0,p.r*1.6,p.r*.35,-.2,0,Math.PI*2);ctx.stroke();
+   ctx.restore();
+ });
+
+ // rare narwhal drifting in the distant Galaxy sky
+ if(narwhal){
+   const nx=narwhal.x-world, ny=narwhal.y;
+   if(nx>-120 && nx<W+120){
+     ctx.save(); ctx.translate(nx,ny);
+     ctx.globalAlpha=.72;
+     ctx.fillStyle='#d8f7ff';
+     ctx.beginPath();ctx.ellipse(0,0,34,13,0,0,Math.PI*2);ctx.fill();
+     ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-52,-12);ctx.lineTo(-45,4);ctx.lineTo(-52,13);ctx.closePath();ctx.fill();
+     ctx.fillStyle='#8fe7ff';
+     ctx.beginPath();ctx.moveTo(27,-3);ctx.lineTo(48,-30);ctx.lineTo(34,-5);ctx.closePath();ctx.fill();
+     ctx.fillStyle='#ffffff';ctx.fillRect(16,-5,4,4);
+     ctx.fillStyle='#b56cff';
+     for(let i=0;i<4;i++)ctx.fillRect(-22+i*10,15+(i%2)*3,3,3);
+     ctx.restore();
+   }
+ }
+
+ // distant cosmic towers
+ ctx.fillStyle='#2b1c55';
+ for(let x=0;x<W+100;x+=90){
+   let h=35+((x*17)%90);ctx.fillRect(x,H-120-h,22,h);
+   ctx.fillRect(x+10,H-120-h-20,5,20);
+ }
+
+ // platforms
+ for(const p of platforms){
+   const x=p.x-world;
+   if(x>W+50||x+p.w<-50)continue;
+   ctx.fillStyle='#27195b';ctx.fillRect(x,p.y,p.w,p.h);
+   ctx.fillStyle='#8e56e8';ctx.fillRect(x,p.y,p.w,5);
+   ctx.fillStyle='#4e2e91';
+   for(let xx=x+8;xx<x+p.w;xx+=30)ctx.fillRect(xx,p.y+12,15,4);
+ }
+
+ // hazards
+ for(const h of hazards){
+   if(!h.alive)continue;let x=h.x-world;
+   if(x<-80||x>W+80)continue;
+   ctx.save();ctx.translate(x+h.w/2,h.y+h.h/2);
+   if(h.type==='crystal'){
+     ctx.fillStyle='#65f2ff';ctx.rotate(Math.PI/4);
+     ctx.fillRect(-13,-13,26,26);ctx.fillStyle='#fff';ctx.fillRect(-4,-13,7,26);
+   }else if(h.type==='enemy'){
+     ctx.fillStyle='#ff4fd8';ctx.fillRect(-19,-18,38,36);
+     ctx.fillStyle='#fff';ctx.fillRect(-12,-7,7,7);ctx.fillRect(5,-7,7,7);
+     ctx.fillStyle='#27102f';ctx.fillRect(-9,8,18,5);
+     ctx.fillStyle='#ff9be9';ctx.fillRect(-25,-5,6,10);ctx.fillRect(19,-5,6,10);
+   }else if(h.type==='table'){
+     ctx.fillStyle='#ff633e';ctx.fillRect(-24,-17,48,10);
+     ctx.fillStyle='#8d392a';ctx.fillRect(-19,-7,7,24);ctx.fillRect(12,-7,7,24);
+     ctx.fillStyle='#ffd05a';ctx.fillRect(-17,-14,34,4);
+   }else{
+     ctx.fillStyle='#ff633e';ctx.fillRect(-26,-23,52,46);
+     ctx.fillStyle='#ffd05a';ctx.fillRect(-19,-16,38,7);
+   }
+   ctx.restore();
+ }
+
+ // particles
+ for(const q of particles){ctx.globalAlpha=Math.max(0,q.life);ctx.fillStyle=q.col;ctx.fillRect(q.x-world,q.y,5,5)}ctx.globalAlpha=1;
+
+ drawParadox();
+
+ if(beam>0){
+   ctx.globalAlpha=.16;
+   ctx.fillStyle='#b55cff';
+   for(let i=0;i<10;i++)ctx.fillRect(Math.random()*W,Math.random()*H,120+Math.random()*260,3);
+   ctx.globalAlpha=1;
+ }
+
+ ctx.restore();
+
+ scoreEl.textContent=`SCORE ${String(Math.floor(score)).padStart(6,'0')}`;
+ fill.style.width=chaos+'%';
+ beamEl.textContent=beam>0?`CHAOS BEAM ${beam.toFixed(1)}s`:`CHAOS METER ${Math.floor(chaos)}%` ;
+}
+
+function drawParadox(){
+ const x=P.x,y=P.y;
+ ctx.save();ctx.translate(x,y);
+ if(P.dash>0)ctx.globalAlpha=.82;
+ // hair
+ ctx.fillStyle='#14101b';
+ for(let i=0;i<7;i++)ctx.fillRect(4+i*6,-12-(i%3)*5,7,20+(i%2)*7);
+ // body
+ ctx.fillStyle='#111';ctx.fillRect(7,22,31,31);
+ // red X marks
+ ctx.fillStyle='#e22';
+ ctx.fillRect(10,28,5,17);ctx.fillRect(27,28,5,17);
+ ctx.fillRect(13,34,17,5);ctx.fillRect(13,39,17,5);
+ // mask
+ ctx.fillStyle='#eee';ctx.fillRect(10,2,28,23);
+ ctx.fillStyle='#17121d';ctx.fillRect(14,8,8,6);ctx.fillRect(26,8,8,6);
+ ctx.fillStyle='#c33';ctx.fillRect(20,16,8,4);
+ // legs/boots
+ ctx.fillStyle='#111';ctx.fillRect(10,51,10,9);ctx.fillRect(29,51,10,9);
+ ctx.fillStyle='#eee';ctx.fillRect(8,58,13,5);ctx.fillRect(28,58,13,5);
+ // eye frame gesture during first second of run
+ if(score<2.0 && !beam){
+   ctx.strokeStyle='#fff';ctx.lineWidth=3;
+   ctx.beginPath();ctx.moveTo(-2,10);ctx.lineTo(7,5);ctx.lineTo(12,13);ctx.moveTo(50,10);ctx.lineTo(41,5);ctx.lineTo(36,13);ctx.stroke();
+ }
+ if(P.dash>0){
+   ctx.strokeStyle=beam>0?'#fff':'#d6a4ff';ctx.lineWidth=5;
+   ctx.beginPath();ctx.moveTo(-12,35);ctx.lineTo(-55,35);ctx.stroke();
+ }
+ ctx.restore();
+}
+
+function loop(t){
+ const dt=(t-last)/1000||0;last=t;
+ update(dt);draw();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+function begin(){reset();}
+document.getElementById('play').onclick=begin;
+document.getElementById('restart').onclick=begin;
+document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
+document.getElementById('dash').addEventListener('pointerdown',e=>{e.preventDefault();dash()});
+
+c.addEventListener('pointerdown',e=>{
+ e.preventDefault();pointer={x:e.clientX,y:e.clientY,t:performance.now()};
+});
+c.addEventListener('pointerup',e=>{
+ e.preventDefault();
+ if(!running||dead)return;
+ const dx=e.clientX-pointer.x,dy=e.clientY-pointer.y,dt=performance.now()-pointer.t;
+ if(dx>45 && Math.abs(dx)>Math.abs(dy)*1.15){dash();}
+ else if(dt<450){jump();}
+});
+addEventListener('keydown',e=>{
+ if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jump()}
+ if(e.code==='ArrowRight'||e.code==='KeyD'){e.preventDefault();dash()}
+ if(e.code==='Enter'&&(!running||dead))begin();
+});
+})();
+</script>
+</body>
+</html>
