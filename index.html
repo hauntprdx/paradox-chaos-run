@@ -6,14 +6,15 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><title>PARADOX // COSMIC RUN</title>
 <style>
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050313;font-family:monospace}
+  html,body{margin:0;width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#050313;font-family:monospace}
   body{touch-action:none}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#050313}
-  canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+  canvas{display:block;width:100vw;height:100dvh;image-rendering:pixelated}
   #hud{position:fixed;left:14px;top:12px;color:white;text-shadow:3px 3px #13091f;pointer-events:none;z-index:3}
   #title{font-size:18px;font-weight:900;letter-spacing:2px}
   #score{font-size:14px;margin-top:5px}
   #best{font-size:11px;margin-top:2px;opacity:.68;letter-spacing:1px}
+  #orientation{font-size:10px;margin-top:2px;opacity:.52;letter-spacing:1px}
   #meter{margin-top:8px;width:180px;height:13px;border:2px solid white;background:#170d28;box-shadow:3px 3px #08050d}
   #fill{height:100%;width:0%;background:linear-gradient(90deg,#9b43ff,#fff);transition:width .18s ease-out}
   #beam{font-size:12px;margin-top:5px;color:#fff;opacity:.8}
@@ -38,6 +39,7 @@
   <div id="title">PARADOX // COSMIC RUN</div>
   <div id="score">SCORE 000000</div>
   <div id="best">BEST 000000</div>
+  <div id="orientation">MODE PORTRAIT</div>
   <div id="meter"><div id="fill"></div></div>
   <div id="beam">CHAOS METER: CRASH TO CHARGE</div>
 </div>
@@ -73,14 +75,20 @@ const c=document.getElementById('game'),ctx=c.getContext('2d');
 let W=0,H=0,dpr=1;
 function resize(){
   dpr=Math.min(devicePixelRatio||1,2);
-  W=innerWidth; H=innerHeight;
+  const vv=window.visualViewport;
+  W=Math.max(1,Math.floor(vv?.width||innerWidth));
+  H=Math.max(1,Math.floor(vv?.height||innerHeight));
   c.width=Math.floor(W*dpr); c.height=Math.floor(H*dpr);
+  c.style.width=W+'px'; c.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-addEventListener('resize',resize); resize();
+addEventListener('resize',resize);
+if(window.visualViewport) visualViewport.addEventListener('resize',resize);
+resize();
 
 const scoreEl=document.getElementById('score');
 const bestEl=document.getElementById('best');
+const orientationEl=document.getElementById('orientation');
 const fill=document.getElementById('fill');
 const beamEl=document.getElementById('beam');
 const start=document.getElementById('start'), over=document.getElementById('over');
@@ -89,7 +97,7 @@ const flash=document.getElementById('flash');
 let running=false, dead=false, last=0, score=0, best=Number(localStorage.getItem('paradoxBest')||0);
 let world=0, speed=280, chaos=0, beam=0, chaosLockout=0, shake=0, spawnX=0, speedMult=1, nextSpeedScore=180;
 const HOME_X=108, DASH_MAX_X=285;
-let platforms=[], hazards=[], particles=[], stars=[], narwhal=null, narwhalTimer=0;
+let platforms=[], hazards=[], particles=[], stars=[], narwhal=null, narwhalTimer=0, lastSpikeScore=-9999;
 let pointer={x:0,y:0,t:0};
 
 const P={
@@ -100,9 +108,9 @@ const P={
 function reset(){
  running=true; dead=false; score=0; world=0; speed=280; chaos=0; beam=0; chaosLockout=0; shake=0; speedMult=1; nextSpeedScore=180;
  last=performance.now(); pointer={x:0,y:0,t:0}; flash.style.opacity=0;
- particles=[]; hazards=[]; narwhal=null; narwhalTimer=0;
+ particles=[]; hazards=[]; narwhal=null; narwhalTimer=0; lastSpikeScore=-9999;
  P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0;
- const floorY=H-115;
+ const floorY=playFloorY();
  P.y=floorY-P.h; P.onGround=true;
  platforms=[
    {x:-200,y:floorY,w:1250,h:45},
@@ -155,6 +163,31 @@ function addHazardOnPlatform(p,type,pos=.55){
 
 function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
 
+// Responsive vertical play band.
+// Keeps every gameplay platform inside the actually visible part of the phone,
+// with extra breathing room above the touch controls / browser chrome.
+function playFloorY(){
+  const reserve = W < H ? Math.max(155,H*.17) : Math.max(105,H*.19);
+  return H-reserve;
+}
+function playCeilingY(){
+  return W < H ? Math.max(165,H*.20) : Math.max(95,H*.18);
+}
+function fitPlatformY(y){
+  return clamp(y,playCeilingY(),playFloorY());
+}
+function isPortrait(){
+  return H>=W;
+}
+function viewLookAhead(){
+  // Landscape sees farther into the run. Portrait keeps the player a little more centered.
+  return isPortrait()?0:Math.min(110,W*.10);
+}
+function bgScale(){
+  // Slightly tighten background composition in portrait so important scenery stays visible.
+  return isPortrait()?.82:1;
+}
+
 function mainAnchor(){
  // Always build from the furthest viable backbone platform, never from a decorative branch.
  const viable=platforms.filter(p=>p.route!=='greed');
@@ -173,7 +206,7 @@ function safeGapForRise(rise,mastery=false){
 function addRescuePlatform(anchor){
  // Absolute last-resort continuity guard. It should be invisible as a system, not as a platform.
  const rise=clamp((Math.random()-.5)*70,-55,55);
- const y=clamp(anchor.y+rise,H-270,H-82);
+ const y=fitPlatformY(anchor.y+rise);
  const gap=95+Math.random()*35;
  const p={x:anchor.x+anchor.w+gap,y,w:360+Math.random()*170,h:45,route:'main',rescue:true};
  platforms.push(p);
@@ -197,18 +230,18 @@ function ensureWorld(){
    if(masteryUnlocked && Math.random()<masteryChance){
      const rise1=-(55+Math.random()*55);
      const gap1=175+Math.random()*35;
-     const p1={x:lastP.x+lastP.w+gap1,y:clamp(lastP.y+rise1,H-305,H-88),w:155+Math.random()*55,h:42,route:'main',mastery:true};
+     const p1={x:lastP.x+lastP.w+gap1,y:fitPlatformY(lastP.y+rise1),w:155+Math.random()*55,h:42,route:'main',mastery:true};
      platforms.push(p1);
 
      const rise2=-(15+Math.random()*50);
      const gap2=Math.min(safeGapForRise(rise2,true),205+Math.random()*40);
-     const p2={x:p1.x+p1.w+gap2,y:clamp(p1.y+rise2,H-315,H-82),w:190+Math.random()*70,h:42,route:'main',mastery:true};
+     const p2={x:p1.x+p1.w+gap2,y:fitPlatformY(p1.y+rise2),w:190+Math.random()*70,h:42,route:'main',mastery:true};
      platforms.push(p2);
      addHazardOnPlatform(p2,'crystal',.62);
 
      // Give the player somewhere honest to recover after the hero moment.
      const drop=55+Math.random()*85;
-     const p3={x:p2.x+p2.w+105+Math.random()*45,y:clamp(p2.y+drop,H-255,H-78),w:390+Math.random()*180,h:45,route:'main',recovery:true};
+     const p3={x:p2.x+p2.w+105+Math.random()*45,y:fitPlatformY(p2.y+drop),w:390+Math.random()*180,h:45,route:'main',recovery:true};
      platforms.push(p3);
      continue;
    }
@@ -217,7 +250,7 @@ function ensureWorld(){
    if(roll<.50){
      const rise=(Math.random()-.5)*120;
      const gap=Math.min(60+Math.random()*105,safeGapForRise(rise));
-     const y=clamp(lastP.y+rise,H-290,H-78);
+     const y=fitPlatformY(lastP.y+rise);
      const w=320+Math.random()*360;
      const p={x:lastP.x+lastP.w+gap,y,w,h:45,route:'main'};
      platforms.push(p);
@@ -227,13 +260,19 @@ function ensureWorld(){
      }
      if(w>460 && Math.random()<.30)addHazardOnPlatform(p,Math.random()<.56?'enemy':'crystal',.76);
 
-     // Rare cosmic thorn cluster: jump-only obstacle language.
-     // Sparse and only on roomy platforms so it stays readable.
-     if(w>430 && Math.random()<.12){
+     // Sporadic cosmic thorn cluster: readable jump-only punctuation.
+     // They begin appearing early, stay uncommon, and a soft pity timer prevents
+     // a whole long run from somehow never showing one.
+     const spikeDue = score>=450 && (score-lastSpikeScore>1700);
+     const spikeRoll = score>=450 && Math.random()<.24;
+     if(w>410 && (spikeDue || spikeRoll)){
        const spikePos=.28+Math.random()*.44;
        const targetX=p.x+p.w*spikePos;
-       const tooClose=hazards.some(h=>h.alive && h.x>p.x && h.x<p.x+p.w && Math.abs((h.x+h.w/2)-targetX)<120);
-       if(!tooClose)addHazardOnPlatform(p,'spike',spikePos);
+       const tooClose=hazards.some(h=>h.alive && h.x>p.x && h.x<p.x+p.w && Math.abs((h.x+h.w/2)-targetX)<115);
+       if(!tooClose){
+         addHazardOnPlatform(p,'spike',spikePos);
+         lastSpikeScore=score;
+       }
      }
    }
 
@@ -244,7 +283,7 @@ function ensureWorld(){
      const limit=safeGapForRise(rise,hard && score>=7000);
      const desired=hard?(170+Math.random()*75):(125+Math.random()*60);
      const gap=Math.min(desired,limit);
-     const y=clamp(lastP.y+rise,H-305,H-76);
+     const y=fitPlatformY(lastP.y+rise);
      const w=270+Math.random()*260;
      const p={x:lastP.x+lastP.w+gap,y,w,h:45,route:'main',clutch:hard};
      platforms.push(p);
@@ -255,8 +294,8 @@ function ensureWorld(){
    else{
      const gap=95+Math.random()*55;
      const startX=lastP.x+lastP.w+gap;
-     const lowerY=clamp(lastP.y+25+Math.random()*60,H-175,H-78);
-     const upperY=clamp(lowerY-(115+Math.random()*60),H-315,H-105);
+     const lowerY=fitPlatformY(lastP.y+25+Math.random()*60);
+     const upperY=fitPlatformY(lowerY-(115+Math.random()*60));
      const lowerW=440+Math.random()*250;
      const upperW=230+Math.random()*155;
 
@@ -449,7 +488,7 @@ function draw(){
 
  // stars
  for(const s of stars){
-   let sx=s.x-world;
+   let sx=s.x-world-viewLookAhead()*.35;
    if(sx<-20||sx>W+20)continue;
    ctx.fillStyle=beam>0?'#fff':'#d8caff';ctx.fillRect(sx,s.y,s.r,s.r);
  }
@@ -487,7 +526,12 @@ function draw(){
  ctx.globalAlpha=1;
 
  // planets
- const planets=[
+ const bgs=bgScale();
+ const planets=isPortrait()?[
+   {x:W*.72-(world*.032%700),y:H*.18,r:78*bgs},
+   {x:W*.18-(world*.020%850),y:H*.34,r:40*bgs},
+   {x:W*.92-(world*.045%950),y:H*.53,r:56*bgs}
+ ]:[
    {x:W*.76-(world*.045%900),y:H*.22,r:105},
    {x:W*.23-(world*.025%1200),y:H*.34,r:48},
    {x:W*1.05-(world*.07%1400),y:H*.58,r:70}
@@ -503,7 +547,7 @@ function draw(){
 
  // rare narwhal drifting in the distant Galaxy sky
  if(narwhal){
-   const nx=narwhal.x-world, ny=narwhal.y;
+   const nx=narwhal.x-world-viewLookAhead()*.5, ny=narwhal.y;
    if(nx>-120 && nx<W+120){
      ctx.save(); ctx.translate(nx,ny);
      ctx.globalAlpha=.72;
@@ -528,7 +572,7 @@ function draw(){
 
  // platforms
  for(const p of platforms){
-   const x=p.x-world;
+   const x=p.x-world-viewLookAhead();
    if(x>W+50||x+p.w<-50)continue;
    ctx.fillStyle='#27195b';ctx.fillRect(x,p.y,p.w,p.h);
    ctx.fillStyle='#8e56e8';ctx.fillRect(x,p.y,p.w,5);
@@ -538,7 +582,7 @@ function draw(){
 
  // hazards
  for(const h of hazards){
-   if(!h.alive)continue;let x=h.x-world;
+   if(!h.alive)continue;let x=h.x-world-viewLookAhead();
    if(x<-80||x>W+80)continue;
    ctx.save();ctx.translate(x+h.w/2,h.y+h.h/2);
    if(h.type==='crystal'){
@@ -578,7 +622,7 @@ function draw(){
  // particles: chunky arcade sparks with a tiny cross-flare
  for(const q of particles){
    const a=Math.max(0,Math.min(1,q.life*1.6));
-   const px=q.x-world, py=q.y;
+   const px=q.x-world-viewLookAhead(), py=q.y;
    ctx.globalAlpha=a;
    ctx.fillStyle=q.col;
    ctx.fillRect(px,py,5,5);
@@ -602,8 +646,18 @@ function draw(){
 
  ctx.restore();
 
+ // Tiny framing guide for orientation testing only.
+ ctx.save();
+ ctx.globalAlpha=.18;
+ ctx.strokeStyle='#ffffff';
+ ctx.lineWidth=1;
+ const guideX=isPortrait()?W*.52:W*.36;
+ ctx.beginPath();ctx.moveTo(guideX,0);ctx.lineTo(guideX,H);ctx.stroke();
+ ctx.restore();
+
  scoreEl.textContent=`SCORE ${String(Math.floor(score)).padStart(6,'0')}`;
  bestEl.textContent=`BEST ${String(Math.max(best,Math.floor(score))).padStart(6,'0')}`;
+ orientationEl.textContent=isPortrait()?'MODE PORTRAIT':'MODE LANDSCAPE';
  fill.style.width=chaos+'%';
  beamEl.textContent=beam>0?`CHAOS BEAM ${beam.toFixed(1)}s`:`CHAOS METER ${Math.floor(chaos)}%` ;
 }
