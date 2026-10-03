@@ -41,7 +41,7 @@
   <div id="meter"><div id="fill"></div></div>
   <div id="beam">CHAOS METER: CRASH TO CHARGE</div>
 </div>
-<div id="help">TAP = JUMP<br>2ND TAP = DOUBLE JUMP<br>SWIPE RIGHT = HEADBUTT<br>CRASH THINGS = CHAOS</div>
+<div id="help">TAP = JUMP<br>2ND TAP = DOUBLE JUMP<br>SWIPE RIGHT = HEADBUTT<br>CRASH THINGS = CHAOS<br>THORNS = JUMP</div>
 
 <div id="controls">
   <button class="ctrl" id="jump">JUMP</button>
@@ -148,8 +148,8 @@ function burst(x,y,n,col){
 }
 
 function addHazardOnPlatform(p,type,pos=.55){
- const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:46;
- const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:52;
+ const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:type==='spike'?24:46;
+ const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:type==='spike'?54:52;
  hazards.push({x:p.x+p.w*pos-ww/2,y:p.y-hh,w:ww,h:hh,type,alive:true});
 }
 
@@ -226,6 +226,15 @@ function ensureWorld(){
        addHazardOnPlatform(p,r<.30?'table':r<.64?'enemy':r<.84?'crystal':'barrier',.40+Math.random()*.25);
      }
      if(w>460 && Math.random()<.30)addHazardOnPlatform(p,Math.random()<.56?'enemy':'crystal',.76);
+
+     // Rare cosmic thorn cluster: jump-only obstacle language.
+     // Sparse and only on roomy platforms so it stays readable.
+     if(w>430 && Math.random()<.12){
+       const spikePos=.28+Math.random()*.44;
+       const targetX=p.x+p.w*spikePos;
+       const tooClose=hazards.some(h=>h.alive && h.x>p.x && h.x<p.x+p.w && Math.abs((h.x+h.w/2)-targetX)<120);
+       if(!tooClose)addHazardOnPlatform(p,'spike',spikePos);
+     }
    }
 
    // Clutch jump. Hard ones should demand the double jump, but still be physically reachable.
@@ -345,9 +354,17 @@ function update(dt){
    if(!rectHit(P,hh))continue;
 
    const isCrystal=h.type==='crystal';
+   const isSpike=h.type==='spike';
    const smashing=P.dash>0 || beam>0;
 
-   if(!isCrystal && !smashing){
+   // Spikes are jump-only in normal play. Headbutt does not save you.
+   // Chaos Beam can still vaporize them.
+   if(isSpike && beam<=0){
+     die();
+     return;
+   }
+
+   if(!isCrystal && !isSpike && !smashing){
      die();
      return;
    }
@@ -356,12 +373,12 @@ function update(dt){
 
    // Reward a clean headbutt hit by accelerating the next one.
    // This makes close obstacle pairs skill-chainable instead of unavoidable.
-   if(!isCrystal && P.dash>0){
+   if(!isCrystal && !isSpike && P.dash>0){
      P.dashCooldown=Math.min(P.dashCooldown,.20);
    }
 
-   const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 9 : h.type==='crystal' ? 17 : 11;
-   const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : 150;
+   const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 9 : h.type==='crystal' ? 17 : h.type==='spike' ? 0 : 11;
+   const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : h.type==='spike' ? 180 : 150;
    score+=scoreGain;
 
    // No Chaos gain during Beam or during post-Beam recovery.
@@ -527,6 +544,21 @@ function draw(){
    if(h.type==='crystal'){
      ctx.fillStyle='#65f2ff';ctx.rotate(Math.PI/4);
      ctx.fillRect(-13,-13,26,26);ctx.fillStyle='#fff';ctx.fillRect(-4,-13,7,26);
+   }else if(h.type==='spike'){
+     // Cosmic thorns: familiar spike readability, Galaxy-native look.
+     ctx.fillStyle='#8d5cff';
+     for(let i=-2;i<=2;i++){
+       const ox=i*10;
+       const tip=(i%2===0)?-22:-17;
+       ctx.beginPath();
+       ctx.moveTo(ox-6,12);
+       ctx.lineTo(ox,tip);
+       ctx.lineTo(ox+6,12);
+       ctx.closePath();
+       ctx.fill();
+     }
+     ctx.fillStyle='#e7dbff';
+     for(let i=-2;i<=2;i++)ctx.fillRect(i*10-1,-10-(i%2===0?5:1),2,8);
    }else if(h.type==='enemy'){
      ctx.fillStyle='#ff4fd8';ctx.fillRect(-19,-18,38,36);
      ctx.fillStyle='#fff';ctx.fillRect(-12,-7,7,7);ctx.fillRect(5,-7,7,7);
