@@ -84,7 +84,7 @@ const start=document.getElementById('start'), over=document.getElementById('over
 const flash=document.getElementById('flash');
 
 let running=false, dead=false, last=0, score=0, best=Number(localStorage.getItem('paradoxBest')||0);
-let world=0, speed=280, chaos=0, beam=0, shake=0, spawnX=0, speedMult=1, nextSpeedScore=72;
+let world=0, speed=280, chaos=0, beam=0, chaosLockout=0, shake=0, spawnX=0, speedMult=1, nextSpeedScore=180;
 const HOME_X=108, DASH_MAX_X=285;
 let platforms=[], hazards=[], particles=[], stars=[], narwhal=null, narwhalTimer=0;
 let pointer={x:0,y:0,t:0};
@@ -95,7 +95,7 @@ const P={
 };
 
 function reset(){
- running=true; dead=false; score=0; world=0; speed=280; chaos=0; beam=0; shake=0; speedMult=1; nextSpeedScore=72;
+ running=true; dead=false; score=0; world=0; speed=280; chaos=0; beam=0; chaosLockout=0; shake=0; speedMult=1; nextSpeedScore=180;
  particles=[]; hazards=[]; narwhal=null; narwhalTimer=0;
  P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0;
  const floorY=H-115;
@@ -168,8 +168,17 @@ function update(dt){
  dt=Math.min(dt,.032);
  const beamActive=beam>0;
  if(!beamActive && score>=nextSpeedScore){
-   speedMult*=1.04+Math.random()*0.02;
-   nextSpeedScore+=50+Math.random()*35;
+   // v8 pacing: one controlled speed bump, then place the next target
+   // relative to the CURRENT score so large destruction bonuses cannot queue
+   // several acceleration jumps back-to-back.
+   const speedStep = 1.02 + Math.random()*0.015; // +2% to +3.5%
+   speedMult = Math.min(speedMult*speedStep, 1.85);
+
+   let minGap=220, maxGap=320;
+   if(score>=700){ minGap=300; maxGap=430; }
+   if(score>=1600){ minGap=420; maxGap=580; }
+   if(score>=3000){ minGap=550; maxGap=750; }
+   nextSpeedScore = score + minGap + Math.random()*(maxGap-minGap);
    shake=Math.max(shake,.10);
  }
  speed=beamActive?(280*speedMult*1.78):(280*speedMult);
@@ -211,9 +220,10 @@ function update(dt){
      const hh={x:h.x-world,y:h.y,w:h.w,h:h.h};
      if(h.alive && rectHit(P,hh)){
        h.alive=false;
-       const chaosGain = h.type==='table' ? 9 : h.type==='enemy' ? 17 : h.type==='crystal' ? 35 : 23;
+       const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 9 : h.type==='crystal' ? 17 : 11;
        const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : 150;
-       score+=scoreGain; chaos=Math.min(100,chaos+chaosGain);
+       score+=scoreGain;
+       if(beam<=0 && chaosLockout<=0) chaos=Math.min(100,chaos+chaosGain);
        shake=h.type==='crystal'?10:7; burst(hh.x+hh.w/2,hh.y+hh.h/2, h.type==='crystal'?26:18, h.type==='crystal'?'#b56cff':'#fff');
      }
    }
@@ -237,7 +247,10 @@ function update(dt){
  if(beam>0){
    beam-=dt;
    chaos=Math.max(0,chaos);
+   if(beam<=0){ beam=0; chaosLockout=5; }
    if(Math.random()<.35)burst(P.x+Math.random()*50,P.y+Math.random()*60,2,'#b56cff');
+ } else if(chaosLockout>0){
+   chaosLockout=Math.max(0,chaosLockout-dt);
  }
 
  for(const s of stars){
