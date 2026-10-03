@@ -135,28 +135,71 @@ function burst(x,y,n,col){
  for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*240,life:.4+Math.random()*.5,col});
 }
 
+function addHazardOnPlatform(p,type,pos=.55){
+ const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:46;
+ const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:52;
+ hazards.push({x:p.x+p.w*pos-ww/2,y:p.y-hh,w:ww,h:hh,type,alive:true});
+}
+
 function ensureWorld(){
- const lastP=platforms[platforms.length-1];
- if(lastP.x < world+W+900){
-   let x=lastP.x+lastP.w+55+Math.random()*80;
-   let y=Math.max(H-250, Math.min(H-80,lastP.y+(Math.random()-.5)*90));
-   let w=260+Math.random()*300;
-   platforms.push({x,y,w,h:45});
-   if(Math.random()<.82){
-     const r=Math.random();
-     const type=r<.42?'table':r<.72?'enemy':r<.90?'crystal':'barrier';
-     const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:46;
-     const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:52;
-     hazards.push({x:x+w*.45,y:y-hh,w:ww,h:hh,type,alive:true});
+ // Generate in rhythmic chunks instead of one nearly-identical platform at a time.
+ // The last platform pushed is always the "main" route so generation stays stable.
+ while(platforms[platforms.length-1].x < world+W+1050){
+   const lastP=platforms[platforms.length-1];
+   const roll=Math.random();
+   const floorBand=H-115;
+
+   // Calm / standard section. Most of the run still needs readable single-jump rhythm.
+   if(roll<.52){
+     const gap=60+Math.random()*105;
+     const yShift=(Math.random()-.5)*125;
+     const y=Math.max(H-300,Math.min(H-75,lastP.y+yShift));
+     const w=300+Math.random()*360;
+     const p={x:lastP.x+lastP.w+gap,y,w,h:45,route:'main'};
+     platforms.push(p);
+     if(Math.random()<.72){
+       const r=Math.random();
+       addHazardOnPlatform(p,r<.34?'table':r<.67?'enemy':r<.86?'crystal':'barrier',.40+Math.random()*.25);
+     }
+     if(w>430 && Math.random()<.34)addHazardOnPlatform(p,Math.random()<.58?'enemy':'crystal',.76);
    }
-   if(Math.random()<.42){
-     const type=Math.random()<.55?'crystal':'table';
-     const hh=type==='crystal'?35:34, ww=type==='crystal'?34:48;
-     hazards.push({x:x+w*.76,y:y-hh,w:ww,h:hh,type,alive:true});
+
+   // Clutch gap / height test. Some are barely single-jumpable, some really want the double.
+   else if(roll<.78){
+     const hard=Math.random()<.48;
+     const gap=hard?(185+Math.random()*90):(130+Math.random()*65);
+     const rise=hard?-(95+Math.random()*70):((Math.random()<.5?-1:1)*(55+Math.random()*80));
+     const y=Math.max(H-315,Math.min(H-72,lastP.y+rise));
+     const w=250+Math.random()*260;
+     const p={x:lastP.x+lastP.w+gap,y,w,h:45,route:'main',clutch:hard};
+     platforms.push(p);
+     if(Math.random()<.64)addHazardOnPlatform(p,Math.random()<.52?'crystal':'enemy',.55);
+   }
+
+   // Branching dare: high greed route versus lower survival route.
+   else{
+     const gap=95+Math.random()*70;
+     const startX=lastP.x+lastP.w+gap;
+     const lowerY=Math.max(H-150,Math.min(H-78,lastP.y+35+Math.random()*70));
+     const upperY=Math.max(H-330,lowerY-(125+Math.random()*70));
+     const lowerW=420+Math.random()*260;
+     const upperW=220+Math.random()*170;
+
+     const upper={x:startX+35,y:upperY,w:upperW,h:38,route:'greed'};
+     const lower={x:startX,y:lowerY,w:lowerW,h:45,route:'safe'};
+
+     // Push upper first and lower last so the lower/main route controls future generation.
+     platforms.push(upper);
+     addHazardOnPlatform(upper,'crystal',.40);
+     if(Math.random()<.52)addHazardOnPlatform(upper,'crystal',.76);
+
+     platforms.push(lower);
+     if(Math.random()<.88)addHazardOnPlatform(lower,Math.random()<.55?'enemy':'barrier',.42);
+     if(Math.random()<.56)addHazardOnPlatform(lower,Math.random()<.68?'enemy':'table',.72);
    }
  }
- platforms=platforms.filter(p=>p.x+p.w>world-300);
- hazards=hazards.filter(h=>h.x>world-400 && h.alive);
+ platforms=platforms.filter(p=>p.x+p.w>world-350);
+ hazards=hazards.filter(h=>h.x>world-450 && h.alive);
 }
 
 function rectHit(a,b){
@@ -273,7 +316,6 @@ function update(dt){
    q.x+=q.vx*dt; q.y+=q.vy*dt; q.life-=dt; q.vy+=400*dt;
  }
  particles=particles.filter(q=>q.life>0);
- shake*=Math.pow(.01,dt);
 }
 
 function die(){
@@ -430,14 +472,22 @@ function drawParadox(){
 }
 
 function loop(t){
- const dt=(t-last)/1000||0;last=t;
- update(dt);draw();requestAnimationFrame(loop);
+ const dt=Math.min((t-last)/1000||0,.05);last=t;
+ update(dt);
+ // Camera shake must decay even after death, when update() intentionally stops.
+ // This preserves the hard impact without trapping the game-over screen mid-earthquake.
+ if(shake>0){
+   shake*=Math.pow(.002,dt);
+   if(shake<.08)shake=0;
+ }
+ draw();requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
 function begin(){reset();}
 document.getElementById('play').onclick=begin;
 document.getElementById('restart').onclick=begin;
+over.addEventListener('pointerdown',e=>{if(dead && !e.target.closest('button')){e.preventDefault();begin();}});
 document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
 document.getElementById('dash').addEventListener('pointerdown',e=>{e.preventDefault();dash()});
 
