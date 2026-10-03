@@ -100,6 +100,7 @@ function reset(){
  particles=[]; hazards=[]; narwhal=null; narwhalTimer=0;
  P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0;
  const floorY=H-115;
+ P.y=floorY-P.h; P.onGround=true;
  platforms=[
    {x:-200,y:floorY,w:1250,h:45},
    {x:1080,y:floorY-55,w:400,h:45},
@@ -320,25 +321,40 @@ function update(dt){
    const returnRate=12;
    P.x += (HOME_X-P.x)*Math.min(1,returnRate*dt);
  }
-   for(const h of hazards){
-     const hh={x:h.x-world,y:h.y,w:h.w,h:h.h};
-     if(h.alive && rectHit(P,hh)){
-       h.alive=false;
-       const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 9 : h.type==='crystal' ? 17 : 11;
-       const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : 150;
-       score+=scoreGain;
-       if(beam<=0 && chaosLockout<=0) chaos=Math.min(100,chaos+chaosGain);
-       shake=h.type==='crystal'?10:7; burst(hh.x+hh.w/2,hh.y+hh.h/2, h.type==='crystal'?26:18, h.type==='crystal'?'#b56cff':'#fff');
-     }
-   }
-
- const playerScreenX=P.x;
+ // Collision rules:
+ // - Crystals are safe collectibles.
+ // - Tables, enemies, and barriers kill on normal contact.
+ // - Active headbutt or Chaos Beam destroys dangerous objects.
  for(const h of hazards){
    if(!h.alive)continue;
    const hh={x:h.x-world,y:h.y,w:h.w,h:h.h};
-   if(rectHit({x:playerScreenX,y:P.y,w:P.w,h:P.h},hh) && P.invuln<=0){
-     die(); return;
+   if(!rectHit(P,hh))continue;
+
+   const isCrystal=h.type==='crystal';
+   const smashing=P.dash>0 || beam>0;
+
+   if(!isCrystal && !smashing){
+     die();
+     return;
    }
+
+   h.alive=false;
+   const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 9 : h.type==='crystal' ? 17 : 11;
+   const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : 150;
+   score+=scoreGain;
+
+   // No Chaos gain during Beam or during post-Beam recovery.
+   if(beam<=0 && chaosLockout<=0){
+     chaos=Math.min(100,chaos+chaosGain);
+   }
+
+   shake=isCrystal?10:7;
+   burst(
+     hh.x+hh.w/2,
+     hh.y+hh.h/2,
+     isCrystal?26:18,
+     isCrystal?'#b56cff':'#fff'
+   );
  }
 
  if(P.y>H+160){ die(); return; }
