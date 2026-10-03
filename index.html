@@ -366,7 +366,8 @@ function update(dt){
 
  let landed=false;
  for(const p of platforms){
-   if(P.x+P.w>p.x-world && P.x<p.x+p.w-world &&
+   const px=p.x-world-viewLookAhead();
+   if(P.x+P.w>px && P.x<px+p.w &&
       P.y+P.h>=p.y && P.y+P.h<=p.y+Math.max(25,P.vy*dt+8) && P.vy>=0){
       P.y=p.y-P.h; P.vy=0; P.onGround=true; P.jumps=0; landed=true; break;
    }
@@ -390,7 +391,7 @@ function update(dt){
  // - Active headbutt or Chaos Beam destroys dangerous objects.
  for(const h of hazards){
    if(!h.alive)continue;
-   const hh={x:h.x-world,y:h.y,w:h.w,h:h.h};
+   const hh={x:h.x-world-viewLookAhead(),y:h.y,w:h.w,h:h.h};
    if(!rectHit(P,hh))continue;
 
    const isCrystal=h.type==='crystal';
