@@ -43,7 +43,7 @@
   <div id="meter"><div id="fill"></div></div>
   <div id="beam">CHAOS METER: CRASH TO CHARGE</div>
 </div>
-<div id="help">TAP = JUMP<br>2ND TAP = DOUBLE JUMP<br>SWIPE RIGHT = HEADBUTT<br>CRASH THINGS = CHAOS<br>THORNS = JUMP</div>
+<div id="help">TAP = JUMP<br>2ND TAP = DOUBLE JUMP<br>SWIPE RIGHT = HEADBUTT<br>SMASH PLANETS / PODS / STALKERS<br>THORN MAW = JUMP</div>
 
 <div id="controls">
   <button class="ctrl" id="jump">JUMP</button>
@@ -55,7 +55,7 @@
     <h1>CHAOS RUN</h1>
     <p>Paradox is entering the galaxy.<br><br>
     Tap anywhere to jump. Tap again in the air for a double jump.<br>
-    Swipe right or hit HEADBUTT to smash through cosmic junk.</p>
+    Swipe right or hit HEADBUTT to smash planets, orbital pods, and Void Stalkers.<br>Jump the Thorn Maw. Collect Cosmic Cores.</p>
     <button id="play">START RUN</button>
   </div>
 </div>
@@ -158,7 +158,8 @@ function burst(x,y,n,col){
 function addHazardOnPlatform(p,type,pos=.55){
  const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:type==='spike'?24:46;
  const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:type==='spike'?54:52;
- hazards.push({x:p.x+p.w*pos-ww/2,y:p.y-hh,w:ww,h:hh,type,alive:true});
+ const elite=type==='enemy' && score>=15000 && Math.random()<.22;
+ hazards.push({x:p.x+p.w*pos-ww/2,y:p.y-hh,w:ww,h:hh,type,alive:true,elite});
 }
 
 function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
@@ -425,13 +426,18 @@ function update(dt){
      chaos=Math.min(100,chaos+chaosGain);
    }
 
-   shake=isCrystal?10:7;
-   burst(
-     hh.x+hh.w/2,
-     hh.y+hh.h/2,
-     isCrystal?26:18,
-     isCrystal?'#b56cff':'#fff'
-   );
+   shake=isCrystal?10:(h.elite?13:8);
+   const burstColor =
+     h.type==='crystal' ? '#9ff6ff' :
+     h.type==='enemy' ? (h.elite?'#ffd6ff':'#d889ff') :
+     h.type==='table' ? '#ffb86b' :
+     h.type==='barrier' ? '#7ee8ff' :
+     '#ffffff';
+   const burstCount =
+     h.type==='crystal' ? 32 :
+     h.elite ? 42 :
+     (h.type==='table'||h.type==='barrier') ? 26 : 20;
+   burst(hh.x+hh.w/2,hh.y+hh.h/2,burstCount,burstColor);
  }
 
  if(P.y>H+160){ die(); return; }
@@ -479,6 +485,122 @@ function die(){
  best=Math.max(best,Math.floor(score)); localStorage.setItem('paradoxBest',best);
  document.getElementById('final').textContent=`SCORE ${String(Math.floor(score)).padStart(6,'0')}   BEST ${String(best).padStart(6,'0')}`;
  over.classList.remove('hide');
+}
+
+
+function drawGalaxyThorn(h,t){
+  const sway=Math.sin(t*.006+h.x*.018)*3;
+  ctx.save();
+  ctx.translate(0,3);
+  ctx.fillStyle='#32113f';
+  ctx.fillRect(-27,6,54,8);
+  for(let i=-2;i<=2;i++){
+    const ox=i*11;
+    const ht=15+(Math.abs(i)%2)*5+(i===0?9:0);
+    ctx.strokeStyle='#55206e';ctx.lineWidth=7;
+    ctx.beginPath();
+    ctx.moveTo(ox,8);
+    ctx.quadraticCurveTo(ox+sway*(i*.25),-ht*.45,ox+sway,-ht);
+    ctx.stroke();
+    ctx.strokeStyle='#d36cff';ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(ox+2,5);
+    ctx.quadraticCurveTo(ox+sway*.45,-ht*.42,ox+sway+1,-ht+2);
+    ctx.stroke();
+    ctx.fillStyle='#f6b1ff';
+    ctx.fillRect(ox+sway-2,-ht-3,4,5);
+  }
+  ctx.fillStyle='#8d38ad';
+  ctx.fillRect(-20,7,7,4);ctx.fillRect(5,5,9,5);
+  ctx.restore();
+}
+
+function drawRingedPlanet(h,t){
+  ctx.save();
+  const wobble=Math.sin(t*.004+h.x*.01)*.08;
+  ctx.rotate(wobble);
+  ctx.strokeStyle='#ffb45c';ctx.lineWidth=4;
+  ctx.beginPath();ctx.ellipse(0,0,29,8,-.18,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#6f51c9';
+  ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#9e7ef1';
+  ctx.fillRect(-7,-8,8,5);ctx.fillRect(4,3,7,4);
+  ctx.strokeStyle='#ffcf7c';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(-4,-14);ctx.lineTo(1,-4);ctx.lineTo(-2,7);ctx.stroke();
+  ctx.restore();
+}
+
+function drawOrbitalPod(h,t){
+  const pulse=.5+.5*Math.sin(t*.006+h.x*.01);
+  ctx.save();
+  ctx.fillStyle='#dfe8ff';
+  ctx.beginPath();ctx.arc(0,0,20,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#253460';
+  ctx.fillRect(-18,-5,36,10);
+  ctx.fillStyle='#13172b';
+  ctx.fillRect(-8,-13,16,26);
+  ctx.fillStyle=`rgba(84,232,255,${.65+.25*pulse})`;
+  ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#ffb45c';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(0,0,14,-.8,.8);ctx.stroke();
+  ctx.fillStyle='#ffb45c';
+  ctx.fillRect(-23,-4,5,8);ctx.fillRect(18,-4,5,8);
+  ctx.restore();
+}
+
+function drawVoidStalker(h,t){
+  const elite=!!h.elite;
+  const s=elite?1.42:1;
+  const bob=Math.sin(t*.009+h.x*.02)*1.5;
+  ctx.save();
+  ctx.translate(0,bob);
+  ctx.scale(s,s);
+  ctx.fillStyle=elite?'#f2e8ff':'#d8d0ef';
+  ctx.beginPath();
+  ctx.moveTo(-18,8);ctx.lineTo(-7,-14);ctx.lineTo(13,-17);
+  ctx.lineTo(22,-5);ctx.lineTo(15,9);ctx.lineTo(1,14);
+  ctx.closePath();ctx.fill();
+  ctx.fillStyle='#1a1027';
+  ctx.fillRect(-8,-7,19,14);
+  ctx.fillStyle=elite?'#ff8dff':'#b34cff';
+  ctx.fillRect(6,-6,7,7);
+  ctx.strokeStyle='#8060c7';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(-12,9);ctx.lineTo(-24,19);ctx.moveTo(7,11);ctx.lineTo(19,20);ctx.stroke();
+  ctx.strokeStyle='#a061ef';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(-18,1);ctx.quadraticCurveTo(-31,-7,-26,-18);ctx.stroke();
+  if(elite){
+    ctx.globalAlpha=.45;
+    ctx.strokeStyle='#ff9dff';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(0,0,28+Math.sin(t*.01)*2,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawCosmicCore(h,t){
+  const pulse=1+Math.sin(t*.008+h.x*.01)*.07;
+  ctx.save();
+  ctx.scale(pulse,pulse);
+  ctx.strokeStyle='#ffcf69';ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(0,0,25,8,t*.0008,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='#7de8ff';ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(0,0,10,24,-t*.0007,0,Math.PI*2);ctx.stroke();
+  const g=ctx.createRadialGradient(0,0,2,0,0,14);
+  g.addColorStop(0,'#ffffff');
+  g.addColorStop(.2,'#82f4ff');
+  g.addColorStop(.48,'#b578ff');
+  g.addColorStop(.72,'#ff7ac8');
+  g.addColorStop(1,'#452b8a');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
+  const shardCols=['#82f4ff','#ff8fda','#ffe38a','#b48bff'];
+  for(let i=0;i<4;i++){
+    const a=t*.001*(i%2?1:-1)+i*Math.PI/2;
+    const x=Math.cos(a)*21,y=Math.sin(a)*14;
+    ctx.fillStyle=shardCols[i];
+    ctx.save();ctx.translate(x,y);ctx.rotate(a);
+    ctx.fillRect(-3,-5,6,10);ctx.restore();
+  }
+  ctx.restore();
 }
 
 function draw(){
@@ -581,41 +703,16 @@ function draw(){
  }
 
  // hazards
+ const artT=performance.now();
  for(const h of hazards){
    if(!h.alive)continue;let x=h.x-world-viewLookAhead();
-   if(x<-80||x>W+80)continue;
+   if(x<-100||x>W+100)continue;
    ctx.save();ctx.translate(x+h.w/2,h.y+h.h/2);
-   if(h.type==='crystal'){
-     ctx.fillStyle='#65f2ff';ctx.rotate(Math.PI/4);
-     ctx.fillRect(-13,-13,26,26);ctx.fillStyle='#fff';ctx.fillRect(-4,-13,7,26);
-   }else if(h.type==='spike'){
-     // Cosmic thorns: familiar spike readability, Galaxy-native look.
-     ctx.fillStyle='#8d5cff';
-     for(let i=-2;i<=2;i++){
-       const ox=i*10;
-       const tip=(i%2===0)?-22:-17;
-       ctx.beginPath();
-       ctx.moveTo(ox-6,12);
-       ctx.lineTo(ox,tip);
-       ctx.lineTo(ox+6,12);
-       ctx.closePath();
-       ctx.fill();
-     }
-     ctx.fillStyle='#e7dbff';
-     for(let i=-2;i<=2;i++)ctx.fillRect(i*10-1,-10-(i%2===0?5:1),2,8);
-   }else if(h.type==='enemy'){
-     ctx.fillStyle='#ff4fd8';ctx.fillRect(-19,-18,38,36);
-     ctx.fillStyle='#fff';ctx.fillRect(-12,-7,7,7);ctx.fillRect(5,-7,7,7);
-     ctx.fillStyle='#27102f';ctx.fillRect(-9,8,18,5);
-     ctx.fillStyle='#ff9be9';ctx.fillRect(-25,-5,6,10);ctx.fillRect(19,-5,6,10);
-   }else if(h.type==='table'){
-     ctx.fillStyle='#ff633e';ctx.fillRect(-24,-17,48,10);
-     ctx.fillStyle='#8d392a';ctx.fillRect(-19,-7,7,24);ctx.fillRect(12,-7,7,24);
-     ctx.fillStyle='#ffd05a';ctx.fillRect(-17,-14,34,4);
-   }else{
-     ctx.fillStyle='#ff633e';ctx.fillRect(-26,-23,52,46);
-     ctx.fillStyle='#ffd05a';ctx.fillRect(-19,-16,38,7);
-   }
+   if(h.type==='crystal') drawCosmicCore(h,artT);
+   else if(h.type==='spike') drawGalaxyThorn(h,artT);
+   else if(h.type==='enemy') drawVoidStalker(h,artT);
+   else if(h.type==='table') drawRingedPlanet(h,artT);
+   else drawOrbitalPod(h,artT);
    ctx.restore();
  }
 
@@ -644,15 +741,6 @@ function draw(){
    ctx.globalAlpha=1;
  }
 
- ctx.restore();
-
- // Tiny framing guide for orientation testing only.
- ctx.save();
- ctx.globalAlpha=.18;
- ctx.strokeStyle='#ffffff';
- ctx.lineWidth=1;
- const guideX=isPortrait()?W*.52:W*.36;
- ctx.beginPath();ctx.moveTo(guideX,0);ctx.lineTo(guideX,H);ctx.stroke();
  ctx.restore();
 
  scoreEl.textContent=`SCORE ${String(Math.floor(score)).padStart(6,'0')}`;
