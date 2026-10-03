@@ -12,7 +12,7 @@
   canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
   #hud{position:fixed;left:14px;top:12px;color:white;text-shadow:3px 3px #13091f;pointer-events:none;z-index:3}
   #title{font-size:18px;font-weight:900;letter-spacing:2px}
-  #score{font-size:14px;margin-top:5px}
+  #score{font-size:14px;margin-top:5px}\n  #best{font-size:11px;margin-top:2px;opacity:.68;letter-spacing:1px}
   #meter{margin-top:8px;width:180px;height:13px;border:2px solid white;background:#170d28;box-shadow:3px 3px #08050d}
   #fill{height:100%;width:0%;background:linear-gradient(90deg,#9b43ff,#fff);transition:width .18s ease-out}
   #beam{font-size:12px;margin-top:5px;color:#fff;opacity:.8}
@@ -36,6 +36,7 @@
 <div id="hud">
   <div id="title">PARADOX // COSMIC RUN</div>
   <div id="score">SCORE 000000</div>
+  <div id="best">BEST 000000</div>
   <div id="meter"><div id="fill"></div></div>
   <div id="beam">CHAOS METER: CRASH TO CHARGE</div>
 </div>
@@ -78,6 +79,7 @@ function resize(){
 addEventListener('resize',resize); resize();
 
 const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
 const fill=document.getElementById('fill');
 const beamEl=document.getElementById('beam');
 const start=document.getElementById('start'), over=document.getElementById('over');
@@ -441,6 +443,31 @@ function draw(){
  }
  ctx.globalAlpha=1;
 
+ // distant Galaxy horizon + slow parallax shards
+ const horizonY=H*.67;
+ const glow=ctx.createLinearGradient(0,horizonY-90,0,horizonY+80);
+ glow.addColorStop(0,'rgba(159,84,255,0)');
+ glow.addColorStop(.55,'rgba(104,60,190,.12)');
+ glow.addColorStop(1,'rgba(65,34,130,.04)');
+ ctx.fillStyle=glow; ctx.fillRect(0,horizonY-90,W,170);
+
+ ctx.globalAlpha=.28;
+ for(let i=0;i<9;i++){
+   const span=W+260;
+   const sx=((i*173-(world*.085))%span+span)%span-130;
+   const sy=H*.48+((i*47)%150);
+   const sh=22+(i%4)*13;
+   ctx.fillStyle=i%2?'#6843a8':'#3155a4';
+   ctx.beginPath();
+   ctx.moveTo(sx,sy);
+   ctx.lineTo(sx+10,sy-sh);
+   ctx.lineTo(sx+21,sy);
+   ctx.lineTo(sx+12,sy+10);
+   ctx.closePath();
+   ctx.fill();
+ }
+ ctx.globalAlpha=1;
+
  // planets
  const planets=[
    {x:W*.76-(world*.045%900),y:H*.22,r:105},
@@ -515,8 +542,21 @@ function draw(){
    ctx.restore();
  }
 
- // particles
- for(const q of particles){ctx.globalAlpha=Math.max(0,q.life);ctx.fillStyle=q.col;ctx.fillRect(q.x-world,q.y,5,5)}ctx.globalAlpha=1;
+ // particles: chunky arcade sparks with a tiny cross-flare
+ for(const q of particles){
+   const a=Math.max(0,Math.min(1,q.life*1.6));
+   const px=q.x-world, py=q.y;
+   ctx.globalAlpha=a;
+   ctx.fillStyle=q.col;
+   ctx.fillRect(px,py,5,5);
+   if(q.life>.28){
+     ctx.fillRect(px-4,py+1,3,2);
+     ctx.fillRect(px+6,py+1,3,2);
+     ctx.fillRect(px+1,py-4,2,3);
+     ctx.fillRect(px+1,py+6,2,3);
+   }
+ }
+ ctx.globalAlpha=1;
 
  drawParadox();
 
@@ -530,6 +570,7 @@ function draw(){
  ctx.restore();
 
  scoreEl.textContent=`SCORE ${String(Math.floor(score)).padStart(6,'0')}`;
+ bestEl.textContent=`BEST ${String(Math.max(best,Math.floor(score))).padStart(6,'0')}`;
  fill.style.width=chaos+'%';
  beamEl.textContent=beam>0?`CHAOS BEAM ${beam.toFixed(1)}s`:`CHAOS METER ${Math.floor(chaos)}%` ;
 }
@@ -560,8 +601,15 @@ function drawParadox(){
    ctx.beginPath();ctx.moveTo(-2,10);ctx.lineTo(7,5);ctx.lineTo(12,13);ctx.moveTo(50,10);ctx.lineTo(41,5);ctx.lineTo(36,13);ctx.stroke();
  }
  if(P.dash>0){
+   // Layered headbutt trail. Purely visual, gameplay timing is untouched.
+   ctx.globalAlpha=.42;
+   ctx.fillStyle=beam>0?'#ffffff':'#9f62ff';
+   ctx.fillRect(-58,17,34,34);
+   ctx.globalAlpha=.22;
+   ctx.fillRect(-88,23,24,22);
+   ctx.globalAlpha=1;
    ctx.strokeStyle=beam>0?'#fff':'#d6a4ff';ctx.lineWidth=5;
-   ctx.beginPath();ctx.moveTo(-12,35);ctx.lineTo(-55,35);ctx.stroke();
+   ctx.beginPath();ctx.moveTo(-12,35);ctx.lineTo(-62,35);ctx.stroke();
  }
  ctx.restore();
 }
