@@ -96,6 +96,7 @@ const P={
 
 function reset(){
  running=true; dead=false; score=0; world=0; speed=280; chaos=0; beam=0; chaosLockout=0; shake=0; speedMult=1; nextSpeedScore=180;
+ last=performance.now(); pointer={x:0,y:0,t:0}; flash.style.opacity=0;
  particles=[]; hazards=[]; narwhal=null; narwhalTimer=0;
  P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0;
  const floorY=H-115;
@@ -141,65 +142,125 @@ function addHazardOnPlatform(p,type,pos=.55){
  hazards.push({x:p.x+p.w*pos-ww/2,y:p.y-hh,w:ww,h:hh,type,alive:true});
 }
 
-function ensureWorld(){
- // Generate in rhythmic chunks instead of one nearly-identical platform at a time.
- // The last platform pushed is always the "main" route so generation stays stable.
- while(platforms[platforms.length-1].x < world+W+1050){
-   const lastP=platforms[platforms.length-1];
-   const roll=Math.random();
-   const floorBand=H-115;
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
 
-   // Calm / standard section. Most of the run still needs readable single-jump rhythm.
-   if(roll<.52){
-     const gap=60+Math.random()*105;
-     const yShift=(Math.random()-.5)*125;
-     const y=Math.max(H-300,Math.min(H-75,lastP.y+yShift));
-     const w=300+Math.random()*360;
+function mainAnchor(){
+ // Always build from the furthest viable backbone platform, never from a decorative branch.
+ const viable=platforms.filter(p=>p.route!=='greed');
+ return viable.reduce((best,p)=>!best || p.x+p.w>best.x+best.w?p:best,null) || platforms[platforms.length-1];
+}
+
+function safeGapForRise(rise,mastery=false){
+ // Rising platforms need a shorter gap than drops. Mastery sections get a little more rope
+ // because the intended solution can include the headbutt lunge.
+ let max=mastery?250:215;
+ if(rise<0) max-=Math.min(55,Math.abs(rise)*.28);
+ if(rise>70) max+=20;
+ return Math.max(135,max);
+}
+
+function addRescuePlatform(anchor){
+ // Absolute last-resort continuity guard. It should be invisible as a system, not as a platform.
+ const rise=clamp((Math.random()-.5)*70,-55,55);
+ const y=clamp(anchor.y+rise,H-270,H-82);
+ const gap=95+Math.random()*35;
+ const p={x:anchor.x+anchor.w+gap,y,w:360+Math.random()*170,h:45,route:'main',rescue:true};
+ platforms.push(p);
+ return p;
+}
+
+function ensureWorld(){
+ // Build around a guaranteed main-route backbone. Optional routes can be spicy,
+ // but the game is never allowed to generate a literal unwinnable void.
+ let safety=0;
+ while(safety++<24){
+   const lastP=mainAnchor();
+   if(!lastP) break;
+   if(lastP.x+lastP.w >= world+W+1150) break;
+
+   const roll=Math.random();
+   const masteryUnlocked=score>=6500;
+   const masteryChance=score>=12000?.11:(score>=6500?.045:0);
+
+   // Rare high-skill sequence: double-jump + headbutt extension territory.
+   if(masteryUnlocked && Math.random()<masteryChance){
+     const rise1=-(55+Math.random()*55);
+     const gap1=175+Math.random()*35;
+     const p1={x:lastP.x+lastP.w+gap1,y:clamp(lastP.y+rise1,H-305,H-88),w:155+Math.random()*55,h:42,route:'main',mastery:true};
+     platforms.push(p1);
+
+     const rise2=-(15+Math.random()*50);
+     const gap2=Math.min(safeGapForRise(rise2,true),205+Math.random()*40);
+     const p2={x:p1.x+p1.w+gap2,y:clamp(p1.y+rise2,H-315,H-82),w:190+Math.random()*70,h:42,route:'main',mastery:true};
+     platforms.push(p2);
+     addHazardOnPlatform(p2,'crystal',.62);
+
+     // Give the player somewhere honest to recover after the hero moment.
+     const drop=55+Math.random()*85;
+     const p3={x:p2.x+p2.w+105+Math.random()*45,y:clamp(p2.y+drop,H-255,H-78),w:390+Math.random()*180,h:45,route:'main',recovery:true};
+     platforms.push(p3);
+     continue;
+   }
+
+   // Calm / readable rhythm.
+   if(roll<.50){
+     const rise=(Math.random()-.5)*120;
+     const gap=Math.min(60+Math.random()*105,safeGapForRise(rise));
+     const y=clamp(lastP.y+rise,H-290,H-78);
+     const w=320+Math.random()*360;
      const p={x:lastP.x+lastP.w+gap,y,w,h:45,route:'main'};
      platforms.push(p);
-     if(Math.random()<.72){
+     if(Math.random()<.70){
        const r=Math.random();
-       addHazardOnPlatform(p,r<.34?'table':r<.67?'enemy':r<.86?'crystal':'barrier',.40+Math.random()*.25);
+       addHazardOnPlatform(p,r<.30?'table':r<.64?'enemy':r<.84?'crystal':'barrier',.40+Math.random()*.25);
      }
-     if(w>430 && Math.random()<.34)addHazardOnPlatform(p,Math.random()<.58?'enemy':'crystal',.76);
+     if(w>460 && Math.random()<.30)addHazardOnPlatform(p,Math.random()<.56?'enemy':'crystal',.76);
    }
 
-   // Clutch gap / height test. Some are barely single-jumpable, some really want the double.
+   // Clutch jump. Hard ones should demand the double jump, but still be physically reachable.
    else if(roll<.78){
      const hard=Math.random()<.48;
-     const gap=hard?(185+Math.random()*90):(130+Math.random()*65);
-     const rise=hard?-(95+Math.random()*70):((Math.random()<.5?-1:1)*(55+Math.random()*80));
-     const y=Math.max(H-315,Math.min(H-72,lastP.y+rise));
-     const w=250+Math.random()*260;
+     const rise=hard?-(75+Math.random()*70):((Math.random()<.5?-1:1)*(45+Math.random()*75));
+     const limit=safeGapForRise(rise,hard && score>=7000);
+     const desired=hard?(170+Math.random()*75):(125+Math.random()*60);
+     const gap=Math.min(desired,limit);
+     const y=clamp(lastP.y+rise,H-305,H-76);
+     const w=270+Math.random()*260;
      const p={x:lastP.x+lastP.w+gap,y,w,h:45,route:'main',clutch:hard};
      platforms.push(p);
-     if(Math.random()<.64)addHazardOnPlatform(p,Math.random()<.52?'crystal':'enemy',.55);
+     if(Math.random()<.62)addHazardOnPlatform(p,Math.random()<.52?'crystal':'enemy',.55);
    }
 
-   // Branching dare: high greed route versus lower survival route.
+   // Branching dare. Upper path pays better. Lower route remains the guaranteed backbone.
    else{
-     const gap=95+Math.random()*70;
+     const gap=95+Math.random()*55;
      const startX=lastP.x+lastP.w+gap;
-     const lowerY=Math.max(H-150,Math.min(H-78,lastP.y+35+Math.random()*70));
-     const upperY=Math.max(H-330,lowerY-(125+Math.random()*70));
-     const lowerW=420+Math.random()*260;
-     const upperW=220+Math.random()*170;
+     const lowerY=clamp(lastP.y+25+Math.random()*60,H-175,H-78);
+     const upperY=clamp(lowerY-(115+Math.random()*60),H-315,H-105);
+     const lowerW=440+Math.random()*250;
+     const upperW=230+Math.random()*155;
 
-     const upper={x:startX+35,y:upperY,w:upperW,h:38,route:'greed'};
+     const upper={x:startX+30,y:upperY,w:upperW,h:38,route:'greed'};
      const lower={x:startX,y:lowerY,w:lowerW,h:45,route:'safe'};
-
-     // Push upper first and lower last so the lower/main route controls future generation.
      platforms.push(upper);
      addHazardOnPlatform(upper,'crystal',.40);
-     if(Math.random()<.52)addHazardOnPlatform(upper,'crystal',.76);
+     if(Math.random()<.48)addHazardOnPlatform(upper,'crystal',.76);
 
      platforms.push(lower);
-     if(Math.random()<.88)addHazardOnPlatform(lower,Math.random()<.55?'enemy':'barrier',.42);
-     if(Math.random()<.56)addHazardOnPlatform(lower,Math.random()<.68?'enemy':'table',.72);
+     if(Math.random()<.82)addHazardOnPlatform(lower,Math.random()<.55?'enemy':'barrier',.42);
+     if(Math.random()<.48)addHazardOnPlatform(lower,Math.random()<.68?'enemy':'table',.72);
    }
  }
- platforms=platforms.filter(p=>p.x+p.w>world-350);
- hazards=hazards.filter(h=>h.x>world-450 && h.alive);
+
+ // Belt-and-suspenders guard: if the backbone somehow isn't far enough ahead, bridge it now.
+ let anchor=mainAnchor();
+ let rescueCount=0;
+ while(anchor && anchor.x+anchor.w<world+W+650 && rescueCount++<5){
+   anchor=addRescuePlatform(anchor);
+ }
+
+ platforms=platforms.filter(p=>p.x+p.w>world-380);
+ hazards=hazards.filter(h=>h.x>world-480 && h.alive);
 }
 
 function rectHit(a,b){
@@ -485,9 +546,20 @@ function loop(t){
 requestAnimationFrame(loop);
 
 function begin(){reset();}
-document.getElementById('play').onclick=begin;
-document.getElementById('restart').onclick=begin;
-over.addEventListener('pointerdown',e=>{if(dead && !e.target.closest('button')){e.preventDefault();begin();}});
+const playBtn=document.getElementById('play');
+const restartBtn=document.getElementById('restart');
+playBtn.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();begin();});
+playBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(!running)begin();});
+function restartNow(e){
+ if(e){e.preventDefault();e.stopPropagation();}
+ if(dead||!running)begin();
+}
+restartBtn.addEventListener('pointerdown',restartNow);
+restartBtn.addEventListener('touchend',restartNow,{passive:false});
+restartBtn.addEventListener('click',restartNow);
+over.addEventListener('pointerdown',e=>{
+ if(dead && !e.target.closest('button')) restartNow(e);
+});
 document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
 document.getElementById('dash').addEventListener('pointerdown',e=>{e.preventDefault();dash()});
 
