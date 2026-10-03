@@ -117,6 +117,11 @@ function reset(){
 
 function jump(){
  if(!running||dead)return;
+
+ // Jumping is always allowed immediately out of a headbutt.
+ // Cancel the remaining lunge so dash -> jump feels intentional and crisp.
+ if(P.dash>0) P.dash=0;
+
  if(P.onGround || P.coyote>0){
    P.vy=-650; P.onGround=false; P.coyote=0; P.jumps=1; burst(P.x+20,P.y+P.h,6,'#ffffff');
    return;
@@ -129,7 +134,9 @@ function jump(){
 
 function dash(){
  if(!running||dead||P.dashCooldown>0)return;
- P.dash=.28; P.dashCooldown=.65; P.invuln=.32;
+ // Longer active smash window with a quicker recovery so headbutt can chain
+ // into another headbutt or into a jump without feeling locked out.
+ P.dash=.50; P.dashCooldown=.55; P.invuln=.54;
  burst(P.x+P.w/2,P.y+P.h/2,12,'#ffffff');
 }
 
@@ -249,7 +256,11 @@ function ensureWorld(){
 
      platforms.push(lower);
      if(Math.random()<.82)addHazardOnPlatform(lower,Math.random()<.55?'enemy':'barrier',.42);
-     if(Math.random()<.48)addHazardOnPlatform(lower,Math.random()<.68?'enemy':'table',.72);
+     if(Math.random()<.48){
+       // Keep the second lethal object far enough away that a skilled player can
+       // chain another headbutt or jump instead of eating an unavoidable death.
+       addHazardOnPlatform(lower,Math.random()<.68?'enemy':'table',.80);
+     }
    }
  }
 
@@ -339,6 +350,13 @@ function update(dt){
    }
 
    h.alive=false;
+
+   // Reward a clean headbutt hit by accelerating the next one.
+   // This makes close obstacle pairs skill-chainable instead of unavoidable.
+   if(!isCrystal && P.dash>0){
+     P.dashCooldown=Math.min(P.dashCooldown,.20);
+   }
+
    const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 9 : h.type==='crystal' ? 17 : 11;
    const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : 150;
    score+=scoreGain;
