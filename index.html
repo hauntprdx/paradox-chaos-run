@@ -1153,11 +1153,154 @@ function drawProceduralFarSpace(){
   ctx.restore();
 }
 
+
+function drawGalaxyTexturePolish(){
+  const portrait=isPortrait();
+  const t=performance.now();
+
+  // Soft nebula ribbons: low contrast, broad, and kept away from the gameplay lane.
+  ctx.save();
+  ctx.globalCompositeOperation='screen';
+  const ribbons=[
+    {x:.18,y:.23,r:.34,c:'rgba(64,120,255,.075)'},
+    {x:.50,y:.14,r:.29,c:'rgba(139,69,255,.070)'},
+    {x:.78,y:.29,r:.31,c:'rgba(255,57,196,.055)'}
+  ];
+  ribbons.forEach((n,i)=>{
+    const x=W*n.x + Math.sin(t*.00008+i*2.2)*W*.018;
+    const y=H*n.y;
+    const rr=Math.max(W,H)*n.r;
+    const g=ctx.createRadialGradient(x,y,0,x,y,rr);
+    g.addColorStop(0,n.c);
+    g.addColorStop(.48,n.c.replace(/[\d.]+\)$/,'0.025)'));
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,W,H*(portrait?.66:.60));
+  });
+  ctx.restore();
+
+  // Fine cosmic dust, deterministic and extremely subtle.
+  ctx.save();
+  for(let i=0;i<(portrait?36:54);i++){
+    const span=W+160;
+    const x=((i*211.37-world*.0065)%span+span)%span-80;
+    const y=H*(.08+((i*61.7)%46)/100);
+    const pulse=.55+.45*Math.sin(t*.0013+i);
+    ctx.globalAlpha=.045+.035*pulse;
+    ctx.fillStyle=i%4===0?'#ff8ee8':i%3===0?'#83dcff':'#a990ff';
+    ctx.fillRect(x,y,1+(i%2),1+(i%2));
+  }
+  ctx.restore();
+}
+
+function drawMidRuin(x,y,s,flip=1,alpha=.50){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(flip*s,s);
+  ctx.globalAlpha=alpha;
+
+  // Soft atmospheric shadow so the ruin belongs to the world, not the HUD.
+  ctx.shadowBlur=18;
+  ctx.shadowColor='rgba(93,64,210,.24)';
+
+  const stone=ctx.createLinearGradient(0,-92,0,8);
+  stone.addColorStop(0,'rgba(31,35,74,.82)');
+  stone.addColorStop(.55,'rgba(16,20,48,.90)');
+  stone.addColorStop(1,'rgba(6,8,24,.94)');
+  ctx.fillStyle=stone;
+
+  // Broken cathedral tower.
+  ctx.beginPath();
+  ctx.moveTo(-34,0); ctx.lineTo(-31,-61); ctx.lineTo(-21,-61);
+  ctx.lineTo(-18,-87); ctx.lineTo(-10,-75); ctx.lineTo(-5,-99);
+  ctx.lineTo(2,-78); ctx.lineTo(9,-89); ctx.lineTo(13,-58);
+  ctx.lineTo(25,-58); ctx.lineTo(29,0); ctx.closePath(); ctx.fill();
+
+  // Arched side fragment.
+  ctx.beginPath();
+  ctx.moveTo(18,0); ctx.lineTo(20,-43);
+  ctx.quadraticCurveTo(42,-69,63,-43);
+  ctx.lineTo(65,0); ctx.lineTo(53,0); ctx.lineTo(52,-38);
+  ctx.quadraticCurveTo(42,-53,31,-38);
+  ctx.lineTo(30,0); ctx.closePath(); ctx.fill();
+
+  // Broken floating foundation.
+  ctx.beginPath();
+  ctx.moveTo(-43,0); ctx.lineTo(70,0); ctx.lineTo(55,14);
+  ctx.lineTo(28,20); ctx.lineTo(10,14); ctx.lineTo(-10,22);
+  ctx.lineTo(-28,13); ctx.closePath(); ctx.fill();
+
+  // Cyan/fuchsia edge accents inspired by the reference art.
+  ctx.shadowBlur=0;
+  ctx.lineWidth=1.5;
+  ctx.strokeStyle='rgba(91,222,255,.32)';
+  ctx.beginPath(); ctx.moveTo(-30,-58); ctx.lineTo(-20,-58); ctx.lineTo(-17,-84);
+  ctx.moveTo(22,-42); ctx.quadraticCurveTo(42,-64,61,-42); ctx.stroke();
+
+  ctx.strokeStyle='rgba(255,91,218,.18)';
+  ctx.beginPath(); ctx.moveTo(-7,-76); ctx.lineTo(-4,-94); ctx.moveTo(29,1); ctx.lineTo(57,1); ctx.stroke();
+
+  // Tiny crystal growths at the base.
+  ctx.fillStyle='rgba(121,221,255,.32)';
+  for(let i=0;i<4;i++){
+    const bx=-18+i*18;
+    const h=6+(i%3)*4;
+    ctx.beginPath(); ctx.moveTo(bx,5); ctx.lineTo(bx+4,-h); ctx.lineTo(bx+8,5); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawSparseNearRuins(){
+  const portrait=isPortrait();
+  const drift=world*(portrait?.052:.060);
+  const span=W+(portrait?520:760);
+  const configs=portrait ? [
+    {seed:130,x:.10,y:.70,s:.56,a:.34,f:1},
+    {seed:470,x:.76,y:.64,s:.62,a:.38,f:-1}
+  ] : [
+    {seed:80,x:.06,y:.70,s:.62,a:.36,f:1},
+    {seed:390,x:.43,y:.64,s:.72,a:.42,f:-1},
+    {seed:710,x:.80,y:.69,s:.60,a:.35,f:1}
+  ];
+
+  configs.forEach((r,i)=>{
+    let x=((W*r.x+r.seed-drift)%span+span)%span-130;
+    // Slow independent bob, visually closer than planets but still firmly background.
+    const y=H*r.y + Math.sin(performance.now()*.00045+i*2.4)*3;
+    drawMidRuin(x,y,r.s,r.f,r.a);
+  });
+}
+
+function drawLowCrystalHaze(){
+  const portrait=isPortrait();
+  ctx.save();
+  const y0=H*(portrait?.76:.78);
+  const g=ctx.createLinearGradient(0,y0,0,H);
+  g.addColorStop(0,'rgba(82,54,170,0)');
+  g.addColorStop(.42,'rgba(85,88,190,.035)');
+  g.addColorStop(.72,'rgba(69,183,219,.045)');
+  g.addColorStop(1,'rgba(14,8,34,.075)');
+  ctx.fillStyle=g;
+  ctx.fillRect(0,y0,W,H-y0);
+
+  ctx.globalCompositeOperation='screen';
+  for(let i=0;i<(portrait?8:13);i++){
+    const x=((i*173-world*.018)%(W+180)+(W+180))%(W+180)-90;
+    const y=H*(.83+(i%3)*.035);
+    const rg=ctx.createRadialGradient(x,y,0,x,y,portrait?38:54);
+    rg.addColorStop(0,i%2?'rgba(93,220,255,.055)':'rgba(210,91,255,.045)');
+    rg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=rg; ctx.fillRect(x-70,y-45,140,90);
+  }
+  ctx.restore();
+}
+
 function drawGalaxyArtLoop(){
   const portrait=isPortrait();
   const t=performance.now();
 
   drawProceduralFarSpace();
+  drawGalaxyTexturePolish();
   // Keep the existing distant black hole as part of the far layer.
   drawBlackHole(W*(portrait?.84:.80)+Math.sin(world*.00022)*16,H*(portrait?.16:.14),portrait?40:54,t);
 
@@ -1171,6 +1314,8 @@ function drawGalaxyArtLoop(){
   drawMasterPanorama(masterPanoImg,{alpha:.18,blur:10,brightness:.28,saturate:.80,offsetX:14,offsetY:14});
   drawMasterPanorama(masterPanoImg,{alpha:.95,brightness:.97,saturate:1.05});
 
+  drawSparseNearRuins();
+
   ctx.save();
   const mask=ctx.createLinearGradient(0,H*.58,0,H);
   mask.addColorStop(0,'rgba(255,255,255,0)');
@@ -1182,6 +1327,8 @@ function drawGalaxyArtLoop(){
   ctx.globalCompositeOperation='source-in';
   drawTiledLayer(lowerAtmoImg,{speed:.020,alpha:.82,targetH:H*(portrait?.15:.13),y:H*(portrait?.82:.84),mirror:true,wobble:1.0,phase:bgSeed*1.3});
   ctx.restore();
+
+  drawLowCrystalHaze();
 
   drawSubtleOverlayDust();
 
