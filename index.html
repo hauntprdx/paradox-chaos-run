@@ -1151,6 +1151,9 @@ function drawProceduralFarSpace(){
     }
   }
   ctx.restore();
+
+  // ATTEMPT #3: direct injection into the proven visible twinkle/star draw path.
+  drawGalaxyPlanetProbe();
 }
 
 
@@ -1394,7 +1397,6 @@ function drawGalaxyArtLoop(){
   const t=performance.now();
 
   drawProceduralFarSpace();
-  drawGalaxyPlanetProbe();
   drawGalaxyTexturePolish();
   drawRestoredCelestialBodies();
   drawRestoredFarRuins();
