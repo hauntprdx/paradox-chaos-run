@@ -1154,6 +1154,49 @@ function drawProceduralFarSpace(){
 }
 
 
+
+function drawDepthPlanet(cx,cy,r,ringed=false,alpha=.72){
+  ctx.save(); ctx.globalAlpha=alpha;
+  const halo=ctx.createRadialGradient(cx,cy,r*.7,cx,cy,r*1.3);
+  halo.addColorStop(0,'rgba(100,90,255,0)');
+  halo.addColorStop(.75,'rgba(120,85,255,.035)');
+  halo.addColorStop(1,'rgba(90,220,255,0)');
+  ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(cx,cy,r*1.3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
+  const g=ctx.createRadialGradient(cx-r*.35,cy-r*.38,r*.06,cx,cy,r*1.15);
+  g.addColorStop(0,'#8c82ff'); g.addColorStop(.34,'#5137a7');
+  g.addColorStop(.73,'#20184f'); g.addColorStop(1,'#070a1e');
+  ctx.fillStyle=g; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  ctx.globalAlpha=.13; ctx.strokeStyle='#df69ff'; ctx.lineWidth=Math.max(1,r*.04);
+  for(let i=-2;i<=2;i++){ctx.beginPath();ctx.ellipse(cx-r*.1,cy+i*r*.22,r*.78,r*.12,i*.08,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
+  ctx.save(); ctx.globalAlpha=alpha*.55; ctx.strokeStyle='#72ddff';
+  ctx.lineWidth=Math.max(1.2,r*.018); ctx.shadowBlur=9; ctx.shadowColor='#72ddff';
+  ctx.beginPath(); ctx.arc(cx,cy,r,Math.PI*.70,Math.PI*1.52); ctx.stroke(); ctx.restore();
+  if(ringed){ctx.save();ctx.translate(cx,cy);ctx.rotate(-.2);ctx.globalAlpha=alpha*.42;
+    ctx.strokeStyle='#b78cff';ctx.lineWidth=Math.max(1.3,r*.03);
+    ctx.beginPath();ctx.ellipse(0,0,r*1.58,r*.31,0,0,Math.PI*2);ctx.stroke();ctx.restore();}
+}
+function drawRestoredCelestialBodies(){
+  const p=isPortrait(),t=performance.now();
+  drawDepthPlanet(W*(p?.18:.14)-(world*.014%(W*.16)),H*(p?.24:.28)+Math.sin(t*.00012)*3,Math.min(W,H)*(p?.19:.18),false,.76);
+  drawDepthPlanet(W*(p?.78:.79)-(world*.008%(W*.08)),H*(p?.36:.32),Math.min(W,H)*(p?.095:.105),true,.60);
+  drawDepthPlanet(W*(p?.66:.55),H*(p?.16:.13),Math.min(W,H)*.038,false,.43);
+}
+function drawFarRuinCluster(x,y,s,a=.24,flip=1){
+  ctx.save();ctx.translate(x,y);ctx.scale(flip*s,s);ctx.globalAlpha=a;ctx.fillStyle='#080b20';
+  ctx.beginPath();ctx.moveTo(-82,2);ctx.lineTo(78,2);ctx.lineTo(55,13);ctx.lineTo(22,18);ctx.lineTo(-8,12);ctx.lineTo(-35,19);ctx.lineTo(-64,12);ctx.closePath();ctx.fill();
+  [[-56,45,9],[-28,67,12],[3,53,10],[31,79,13],[59,42,8]].forEach(([tx,h,w],i)=>{
+    ctx.beginPath();ctx.moveTo(tx-w,2);ctx.lineTo(tx-w*.7,-h*.68);ctx.lineTo(tx,-h-(i%2?9:0));ctx.lineTo(tx+w*.7,-h*.68);ctx.lineTo(tx+w,2);ctx.closePath();ctx.fill();});
+  ctx.lineWidth=7;ctx.strokeStyle='#0a0d27';ctx.beginPath();ctx.arc(-14,-22,24,Math.PI,0);ctx.stroke();ctx.beginPath();ctx.arc(42,-17,17,Math.PI,0);ctx.stroke();
+  ctx.lineWidth=1.2;ctx.strokeStyle='rgba(101,211,255,.30)';ctx.beginPath();ctx.moveTo(-63,-27);ctx.lineTo(-56,-45);ctx.moveTo(22,-38);ctx.lineTo(31,-76);ctx.moveTo(53,-20);ctx.lineTo(59,-40);ctx.stroke();ctx.restore();
+}
+function drawRestoredFarRuins(){
+  const p=isPortrait(),drift=world*(p?.028:.032),span=W+(p?700:980);
+  const cfg=p?[{x:.12,s:110,y:.57,z:.62,a:.24,f:1},{x:.72,s:510,y:.52,z:.53,a:.20,f:-1}]
+             :[{x:.05,s:70,y:.56,z:.62,a:.23,f:1},{x:.38,s:420,y:.50,z:.52,a:.19,f:-1},{x:.76,s:790,y:.57,z:.66,a:.24,f:1}];
+  cfg.forEach((r,i)=>{const x=((W*r.x+r.s-drift)%span+span)%span-150;drawFarRuinCluster(x,H*r.y+Math.sin(performance.now()*.00025+i*1.9)*2,r.z,r.a,r.f);});
+}
 function drawGalaxyTexturePolish(){
   const portrait=isPortrait();
   const t=performance.now();
@@ -1301,6 +1344,8 @@ function drawGalaxyArtLoop(){
 
   drawProceduralFarSpace();
   drawGalaxyTexturePolish();
+  drawRestoredCelestialBodies();
+  drawRestoredFarRuins();
   // Keep the existing distant black hole as part of the far layer.
   drawBlackHole(W*(portrait?.84:.80)+Math.sin(world*.00022)*16,H*(portrait?.16:.14),portrait?40:54,t);
 
