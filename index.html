@@ -872,26 +872,35 @@ function drawRuinCluster(baseX,baseY,seed=0,scale=1){
 
 
 
-function drawTiledLayer(img,{speed=0,alpha=1,targetH=H,y=0,mirror=true,wobble=0,phase=0,blend=null}={}){
+function drawTiledLayer(img,{speed=0,alpha=1,targetH=H,y=0,mirror=false,wobble=0,phase=0,blend=null,scaleJitter=0,feather=0}={}){
   if(!img.complete || !img.naturalWidth) return;
-  const scale=targetH/img.naturalHeight;
-  const dw=img.naturalWidth*scale;
+  const baseScale=targetH/img.naturalHeight;
+  const dw=img.naturalWidth*baseScale;
   const dh=targetH;
-  const offset=-((((world*speed)%dw)+dw)%dw);
-  const drift=wobble?Math.sin(performance.now()*0.00045+phase+world*0.00015)*wobble:0;
+  const raw=(world*speed + phase*dw*.37);
+  const offset=-((((raw)%dw)+dw)%dw);
+  const drift=wobble?Math.sin(performance.now()*0.00035+phase+world*0.00008)*wobble:0;
   ctx.save();
-  ctx.globalAlpha=alpha;
   if(blend) ctx.globalCompositeOperation=blend;
-  for(let i=-1;i<Math.ceil(W/dw)+2;i++){
-    const x=offset+i*dw;
+  const count=Math.ceil(W/dw)+3;
+  for(let i=-1;i<count;i++){
+    const jitter=scaleJitter?1+Math.sin((i+phase)*1.73)*scaleJitter:1;
+    const tw=dw*jitter, th=dh*jitter;
+    const x=offset+i*dw-(tw-dw)*.5;
+    const yy=y+drift-(th-dh)*.5;
+    let a=alpha;
+    if(feather){
+      const center=x+tw*.5;
+      const edge=Math.min(Math.max(center/W,0),Math.max((W-center)/W,0));
+      a*=Math.max(.45,Math.min(1,edge*3+feather));
+    }
+    ctx.globalAlpha=a;
     if(mirror && (i&1)){
-      ctx.save();
-      ctx.translate(x+dw,y+drift);
-      ctx.scale(-1,1);
-      ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,0,0,dw,dh);
+      ctx.save();ctx.translate(x+tw,yy);ctx.scale(-1,1);
+      ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,0,0,tw,th);
       ctx.restore();
-    } else {
-      ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,x,y+drift,dw,dh);
+    }else{
+      ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,x,yy,tw,th);
     }
   }
   ctx.restore();
@@ -914,63 +923,66 @@ function drawCrystalGlints(count,baseAlpha,yMin,yMax){
 function drawGalaxyArtLoop(){
   const portrait=isPortrait();
 
+  // One continuous color field underneath everything so seams have somewhere soft to disappear.
   const bg=ctx.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#030215');
-  bg.addColorStop(.55,'#120626');
-  bg.addColorStop(1,'#070311');
-  ctx.fillStyle=bg;
-  ctx.fillRect(-4,-4,W+8,H+8);
+  bg.addColorStop(0,'#020414');
+  bg.addColorStop(.48,'#0a0824');
+  bg.addColorStop(.78,'#14082a');
+  bg.addColorStop(1,'#05030f');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
 
-  // base galactic glow
+  // soft galactic color pools unify all asset layers
   ctx.save();
-  const glow1=ctx.createRadialGradient(W*.22,H*.22,10,W*.22,H*.22,Math.max(W,H)*.55);
-  glow1.addColorStop(0,'rgba(94,177,255,.22)');
-  glow1.addColorStop(.4,'rgba(117,78,255,.16)');
-  glow1.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=glow1; ctx.fillRect(0,0,W,H);
-  const glow2=ctx.createRadialGradient(W*.78,H*.18,10,W*.78,H*.18,Math.max(W,H)*.46);
-  glow2.addColorStop(0,'rgba(255,84,214,.20)');
-  glow2.addColorStop(.45,'rgba(88,169,255,.12)');
-  glow2.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=glow2; ctx.fillRect(0,0,W,H);
+  let rg=ctx.createRadialGradient(W*.72,H*.20,0,W*.72,H*.20,Math.max(W,H)*.72);
+  rg.addColorStop(0,'rgba(255,76,220,.14)');
+  rg.addColorStop(.34,'rgba(95,80,255,.11)');
+  rg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+  rg=ctx.createRadialGradient(W*.18,H*.38,0,W*.18,H*.38,Math.max(W,H)*.62);
+  rg.addColorStop(0,'rgba(64,219,255,.12)');
+  rg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
   ctx.restore();
 
-  // far space layers
-  drawTiledLayer(starfieldImg,{speed:.016,alpha:.92,targetH:H*1.02,y:-H*.01,mirror:true,wobble:4,phase:bgSeed*5.0});
-  ctx.save();
-  ctx.globalAlpha=.80;
-  drawCrystalGlints(44,.30,10,H*.72);
-  ctx.restore();
-  drawTiledLayer(nebulaImg,{speed:.028,alpha:.47,targetH:H*(portrait?1.00:.92),y:portrait?H*.03:-H*.01,mirror:true,wobble:8,phase:bgSeed*7.0,blend:'screen'});
+  // Far starfield: calm, seamless, never the focal point.
+  drawTiledLayer(starfieldImg,{speed:.010,alpha:.72,targetH:H*1.03,y:-H*.015,mirror:false,wobble:2,phase:bgSeed*2.3,scaleJitter:.012});
+  ctx.save();drawCrystalGlints(portrait?26:34,.22,8,H*.56);ctx.restore();
 
-  // large regal planet / moon pass
-  drawTiledLayer(ringworldImg,{speed:.044,alpha:.38,targetH:H*(portrait?.90:.95),y:portrait?-H*.01:-H*.07,mirror:true,wobble:6,phase:bgSeed*2.2,blend:'screen'});
+  // Nebula: softened so it reads as atmosphere rather than another poster.
+  drawTiledLayer(nebulaImg,{speed:.017,alpha:.27,targetH:H*(portrait?.78:.76),y:portrait?H*.03:-H*.01,mirror:false,wobble:4,phase:bgSeed*4.7,blend:'screen',scaleJitter:.018});
 
-  // shattered throne-isles midground
-  const ruinsH=H*(portrait?.76:.72);
-  drawTiledLayer(ruinsImg,{speed:.074,alpha:.72,targetH:ruinsH,y:H*(portrait?.19:.20),mirror:true,wobble:3,phase:bgSeed*9.0});
+  // Hero ringworld: one dominant celestial read. Slow enough to feel enormous.
+  // Kept lower opacity in portrait to stop the mural/zoom feeling.
+  drawTiledLayer(ringworldImg,{speed:.023,alpha:portrait?.25:.31,targetH:H*(portrait?.68:.82),y:portrait?H*.11:-H*.03,mirror:false,wobble:2,phase:bgSeed*7.1,blend:'screen',scaleJitter:.015});
 
-  // lower atmosphere glow around play space
-  const hy=playFloorY()-48;
-  const floorGlow=ctx.createLinearGradient(0,hy-110,0,hy+95);
-  floorGlow.addColorStop(0,'rgba(179,94,255,0)');
-  floorGlow.addColorStop(.35,'rgba(148,96,255,.09)');
-  floorGlow.addColorStop(.75,'rgba(103,228,255,.10)');
-  floorGlow.addColorStop(1,'rgba(67,25,104,.02)');
-  ctx.fillStyle=floorGlow;
-  ctx.fillRect(0,hy-110,W,210);
+  // Ruins are the identity layer. Lower contrast and staggered sizing prevents obvious repeated 'panels'.
+  drawTiledLayer(ruinsImg,{speed:.050,alpha:portrait?.46:.55,targetH:H*(portrait?.52:.58),y:H*(portrait?.30:.25),mirror:false,wobble:2,phase:bgSeed*11.3,scaleJitter:.035,feather:.18});
 
-  // near-camera ominous royal foreground to sell depth
-  const fgH=H*(portrait?.48:.44);
-  drawTiledLayer(foregroundImg,{speed:.118,alpha:.74,targetH:fgH,y:H-fgH-H*.015,mirror:true,wobble:5,phase:bgSeed*11.0});
+  // Depth fog between scenery and gameplay lane makes the layers blend together.
+  const fog=ctx.createLinearGradient(0,H*.30,0,H*.88);
+  fog.addColorStop(0,'rgba(123,93,224,0)');
+  fog.addColorStop(.42,'rgba(160,132,255,.055)');
+  fog.addColorStop(.70,'rgba(104,224,255,.075)');
+  fog.addColorStop(1,'rgba(35,17,72,.12)');
+  ctx.fillStyle=fog;ctx.fillRect(0,H*.30,W,H*.58);
 
-  // subtle vignette so the world feels more game-like than a flat picture
-  const vign=ctx.createLinearGradient(0,0,0,H);
-  vign.addColorStop(0,'rgba(2,1,8,.10)');
-  vign.addColorStop(.55,'rgba(0,0,0,0)');
-  vign.addColorStop(1,'rgba(1,1,7,.26)');
-  ctx.fillStyle=vign;
-  ctx.fillRect(0,0,W,H);
+  // Foreground D is now framing only, not a second scenic mural.
+  const fgH=H*(portrait?.30:.28);
+  drawTiledLayer(foregroundImg,{speed:.090,alpha:portrait?.30:.38,targetH:fgH,y:H-fgH+H*.01,mirror:false,wobble:3,phase:bgSeed*13.7,scaleJitter:.025,feather:.22});
+
+  // Keep center lane calmer than screen edges.
+  const lane=ctx.createLinearGradient(0,H*.18,0,H*.88);
+  lane.addColorStop(0,'rgba(4,3,15,.02)');
+  lane.addColorStop(.62,'rgba(5,3,18,.08)');
+  lane.addColorStop(1,'rgba(4,2,12,.18)');
+  ctx.fillStyle=lane;ctx.fillRect(0,0,W,H);
+
+  // Gentle edge vignette hides any residual source boundaries and focuses the eye inward.
+  const vg=ctx.createRadialGradient(W*.5,H*.48,Math.min(W,H)*.18,W*.5,H*.48,Math.max(W,H)*.74);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(.74,'rgba(1,1,8,.03)');
+  vg.addColorStop(1,'rgba(1,1,8,.22)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
 }
 
 function draw(){
