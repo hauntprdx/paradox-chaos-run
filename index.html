@@ -1020,7 +1020,7 @@ function drawSubtleOverlayDust(){
   ctx.restore();
 }
 
-function drawGalaxyArtLoopLegacy1(){
+function drawGalaxyArtLoop(){
   const portrait=isPortrait();
 
   // continuous single-world base; no more stacked scenic bands
@@ -1197,6 +1197,57 @@ function drawRestoredFarRuins(){
              :[{x:.05,s:70,y:.56,z:.62,a:.23,f:1},{x:.38,s:420,y:.50,z:.52,a:.19,f:-1},{x:.76,s:790,y:.57,z:.66,a:.24,f:1}];
   cfg.forEach((r,i)=>{const x=((W*r.x+r.s-drift)%span+span)%span-150;drawFarRuinCluster(x,H*r.y+Math.sin(performance.now()*.00025+i*1.9)*2,r.z,r.a,r.f);});
 }
+
+function drawGalaxyPlanetProbe(){
+  // ATTEMPT #2 DIAGNOSTIC: one unmistakable scenic object only.
+  // No gameplay state, collisions, platforms, physics, or renderer architecture touched.
+  const portrait=isPortrait();
+  const r=Math.min(W,H)*(portrait?.145:.135);
+  const x=W*(portrait?.73:.76);
+  const y=H*(portrait?.31:.29);
+
+  ctx.save();
+  ctx.globalAlpha=.92;
+
+  // halo
+  let halo=ctx.createRadialGradient(x,y,r*.75,x,y,r*1.38);
+  halo.addColorStop(0,'rgba(96,120,255,0)');
+  halo.addColorStop(.62,'rgba(112,80,255,.10)');
+  halo.addColorStop(1,'rgba(255,65,210,0)');
+  ctx.fillStyle=halo;
+  ctx.beginPath();ctx.arc(x,y,r*1.38,0,Math.PI*2);ctx.fill();
+
+  // planet body
+  let g=ctx.createRadialGradient(x-r*.38,y-r*.40,r*.06,x,y,r*1.12);
+  g.addColorStop(0,'#9be8ff');
+  g.addColorStop(.18,'#796dff');
+  g.addColorStop(.48,'#5930a7');
+  g.addColorStop(.76,'#211650');
+  g.addColorStop(1,'#07091d');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+
+  // restrained surface bands
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();
+  ctx.globalAlpha=.22;
+  ctx.strokeStyle='#ef76ff';
+  ctx.lineWidth=Math.max(2,r*.045);
+  for(let i=-2;i<=2;i++){
+    ctx.beginPath();
+    ctx.ellipse(x-r*.10,y+i*r*.22,r*.78,r*.10,i*.06,0,Math.PI*2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // bright cyan rim so there is no ambiguity whether the probe rendered
+  ctx.save();
+  ctx.globalAlpha=.72;
+  ctx.strokeStyle='#82ecff';
+  ctx.lineWidth=Math.max(2,r*.025);
+  ctx.shadowBlur=12;ctx.shadowColor='#82ecff';
+  ctx.beginPath();ctx.arc(x,y,r,Math.PI*.72,Math.PI*1.52);ctx.stroke();
+  ctx.restore();
+}
 function drawGalaxyTexturePolish(){
   const portrait=isPortrait();
   const t=performance.now();
@@ -1338,11 +1389,12 @@ function drawLowCrystalHaze(){
   ctx.restore();
 }
 
-function drawGalaxyArtLoopLegacy2(){
+function drawGalaxyArtLoop(){
   const portrait=isPortrait();
   const t=performance.now();
 
   drawProceduralFarSpace();
+  drawGalaxyPlanetProbe();
   drawGalaxyTexturePolish();
   drawRestoredCelestialBodies();
   drawRestoredFarRuins();
@@ -1402,50 +1454,6 @@ function drawGalaxyArtLoopLegacy2(){
   ctx.fillRect(W*.84,0,W*.16,H);
   ctx.restore();
 }
-
-// V8 STEP 2.2: single authoritative Galaxy scenic renderer.
-// Fixed hierarchy: space -> texture -> black hole -> planets -> far ruins -> mid ruins -> low atmosphere -> dust/vignette.
-function drawGalaxyArtLoop(){
-  const portrait=isPortrait();
-  const t=performance.now();
-
-  drawProceduralFarSpace();
-  drawGalaxyTexturePolish();
-
-  // Keep the existing distant black-hole treatment from the proven renderer.
-  drawDistantBlackHole();
-
-  // Self-contained scenic planes, independent of legacy panorama image loading.
-  drawRestoredCelestialBodies();
-  drawRestoredFarRuins();
-  drawSparseNearRuins();
-
-  // Preserve the subtle lower crystal atmosphere that complements the platforms.
-  drawLowCrystalHaze();
-
-  drawSubtleOverlayDust();
-
-  // Organic edge falloff only. No scenic bands or hard dividers.
-  ctx.save();
-  let topFade=ctx.createLinearGradient(0,0,0,H*(portrait?.22:.18));
-  topFade.addColorStop(0,'rgba(2,1,10,.58)');
-  topFade.addColorStop(1,'rgba(2,1,10,0)');
-  ctx.fillStyle=topFade; ctx.fillRect(0,0,W,H*(portrait?.24:.20));
-
-  let bottomFade=ctx.createLinearGradient(0,H*(portrait?.72:.76),0,H);
-  bottomFade.addColorStop(0,'rgba(2,1,10,0)');
-  bottomFade.addColorStop(1,'rgba(2,1,10,.30)');
-  ctx.fillStyle=bottomFade; ctx.fillRect(0,H*(portrait?.72:.76),W,H*(portrait?.28:.24));
-
-  let sideFade=ctx.createLinearGradient(0,0,W,0);
-  sideFade.addColorStop(0,'rgba(2,1,10,.18)');
-  sideFade.addColorStop(.09,'rgba(2,1,10,0)');
-  sideFade.addColorStop(.91,'rgba(2,1,10,0)');
-  sideFade.addColorStop(1,'rgba(2,1,10,.18)');
-  ctx.fillStyle=sideFade; ctx.fillRect(0,0,W,H);
-  ctx.restore();
-}
-
 function draw(){
  ctx.save();
  ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
