@@ -1020,7 +1020,7 @@ function drawSubtleOverlayDust(){
   ctx.restore();
 }
 
-function drawGalaxyArtLoop(){
+function drawGalaxyArtLoopLegacy1(){
   const portrait=isPortrait();
 
   // continuous single-world base; no more stacked scenic bands
@@ -1338,7 +1338,7 @@ function drawLowCrystalHaze(){
   ctx.restore();
 }
 
-function drawGalaxyArtLoop(){
+function drawGalaxyArtLoopLegacy2(){
   const portrait=isPortrait();
   const t=performance.now();
 
@@ -1402,6 +1402,50 @@ function drawGalaxyArtLoop(){
   ctx.fillRect(W*.84,0,W*.16,H);
   ctx.restore();
 }
+
+// V8 STEP 2.2: single authoritative Galaxy scenic renderer.
+// Fixed hierarchy: space -> texture -> black hole -> planets -> far ruins -> mid ruins -> low atmosphere -> dust/vignette.
+function drawGalaxyArtLoop(){
+  const portrait=isPortrait();
+  const t=performance.now();
+
+  drawProceduralFarSpace();
+  drawGalaxyTexturePolish();
+
+  // Keep the existing distant black-hole treatment from the proven renderer.
+  drawDistantBlackHole();
+
+  // Self-contained scenic planes, independent of legacy panorama image loading.
+  drawRestoredCelestialBodies();
+  drawRestoredFarRuins();
+  drawSparseNearRuins();
+
+  // Preserve the subtle lower crystal atmosphere that complements the platforms.
+  drawLowCrystalHaze();
+
+  drawSubtleOverlayDust();
+
+  // Organic edge falloff only. No scenic bands or hard dividers.
+  ctx.save();
+  let topFade=ctx.createLinearGradient(0,0,0,H*(portrait?.22:.18));
+  topFade.addColorStop(0,'rgba(2,1,10,.58)');
+  topFade.addColorStop(1,'rgba(2,1,10,0)');
+  ctx.fillStyle=topFade; ctx.fillRect(0,0,W,H*(portrait?.24:.20));
+
+  let bottomFade=ctx.createLinearGradient(0,H*(portrait?.72:.76),0,H);
+  bottomFade.addColorStop(0,'rgba(2,1,10,0)');
+  bottomFade.addColorStop(1,'rgba(2,1,10,.30)');
+  ctx.fillStyle=bottomFade; ctx.fillRect(0,H*(portrait?.72:.76),W,H*(portrait?.28:.24));
+
+  let sideFade=ctx.createLinearGradient(0,0,W,0);
+  sideFade.addColorStop(0,'rgba(2,1,10,.18)');
+  sideFade.addColorStop(.09,'rgba(2,1,10,0)');
+  sideFade.addColorStop(.91,'rgba(2,1,10,0)');
+  sideFade.addColorStop(1,'rgba(2,1,10,.18)');
+  ctx.fillStyle=sideFade; ctx.fillRect(0,0,W,H);
+  ctx.restore();
+}
+
 function draw(){
  ctx.save();
  ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
