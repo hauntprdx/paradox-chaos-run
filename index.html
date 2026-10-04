@@ -157,11 +157,11 @@ function jump(){
  if(P.dash>0) P.dash=0;
 
  if(P.onGround || P.coyote>0){
-   P.vy=-710; P.onGround=false; P.coyote=0; P.jumps=1; burst(P.x+20,P.y+P.h,6,'#ffffff');
+   P.vy=-650; P.onGround=false; P.coyote=0; P.jumps=1; burst(P.x+20,P.y+P.h,6,'#ffffff');
    return;
  }
  if(P.jumps===1){
-   P.vy=-650; P.jumps=2; burst(P.x+20,P.y+P.h,10,'#b77cff');
+   P.vy=-590; P.jumps=2; burst(P.x+20,P.y+P.h,10,'#b77cff');
    
  }
 }
@@ -420,7 +420,7 @@ function update(dt){
 
  const wasGround=P.onGround;
  P.onGround=false;
- P.vy += 2050*dt;
+ P.vy += 1750*dt;
  P.y += P.vy*dt;
 
  ensureWorld();
@@ -1020,184 +1020,196 @@ function drawSubtleOverlayDust(){
   ctx.restore();
 }
 
-
-function seeded01(n){
-  const x=Math.sin(n*12.9898+bgSeed*78.233)*43758.5453;
-  return x-Math.floor(x);
-}
-
-function drawProceduralGalaxyBase(){
+function drawGalaxyArtLoop(){
   const portrait=isPortrait();
-  const t=performance.now();
 
-  // Deep-space foundation. Dark enough that the neon elements have somewhere to glow.
-  const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#01020a');
-  g.addColorStop(.38,'#05091b');
-  g.addColorStop(.72,'#0c0618');
-  g.addColorStop(1,'#03020a');
-  ctx.fillStyle=g;
-  ctx.fillRect(0,0,W,H);
+  // continuous single-world base; no more stacked scenic bands
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#030311');
+  bg.addColorStop(.34,'#080b26');
+  bg.addColorStop(.72,'#120821');
+  bg.addColorStop(1,'#05030f');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
 
-  // Very soft nebula bloom, built in-engine so there are no seams.
-  const clouds=[
-    [0.20,0.18,0.40,'rgba(56,78,184,.16)'],
-    [0.72,0.22,0.46,'rgba(166,42,176,.13)'],
-    [0.48,0.52,0.58,'rgba(58,38,124,.10)']
-  ];
-  for(const [cx,cy,rr,col] of clouds){
-    const drift=Math.sin(t*.00005+cx*9+bgSeed*3)*W*.025;
-    const r=Math.max(W,H)*rr;
-    const rg=ctx.createRadialGradient(W*cx+drift,H*cy,0,W*cx+drift,H*cy,r);
-    rg.addColorStop(0,col);
-    rg.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=rg;
-    ctx.fillRect(0,0,W,H);
-  }
+  // one master panorama source fills the whole world, first as a dark blurred bed...
+  drawMasterPanorama(masterPanoImg,{blurred:true,alpha:.34});
 
-  // Seamless procedural stars: three depths, each moving at its own tiny rate.
-  const starLayers=portrait?[[55,.004,.42],[30,.007,.58],[14,.012,.78]]:[[80,.004,.42],[45,.007,.58],[20,.012,.78]];
-  for(let li=0;li<starLayers.length;li++){
-    const [count,speed,alpha]=starLayers[li];
-    for(let i=0;i<count;i++){
-      const span=W+260;
-      const base=seeded01(i+li*101)*span;
-      const x=((base-world*speed)%span+span)%span-130;
-      const y=seeded01(i*3.17+li*71)*H*(portrait?.76:.82);
-      const tw=.55+.45*Math.sin(t*.0018+i*1.73+li);
-      const size=li===2?(tw>.82?2:1):1;
-      ctx.globalAlpha=alpha*(.55+tw*.45);
-      ctx.fillStyle=i%7===0?'#ffb2ef':i%5===0?'#90e9ff':'#e8e8ff';
-      ctx.fillRect(x,y,size,size);
-      if(li===2 && tw>.90){
-        ctx.fillRect(x-2,y,5,1);
-        ctx.fillRect(x,y-2,1,5);
-      }
-    }
-  }
-  ctx.globalAlpha=1;
-}
+  // ...then the sharp playable vista on top.
+  drawMasterPanorama(masterPanoImg,{alpha:.95});
 
-function drawScenePlanet(baseX,baseY,r,speed,c1,c2,ring=null,tilt=0){
-  const span=W+1600;
-  const x=((baseX-world*speed)%span+span)%span-800;
-  if(x+r*2<-150 || x-r*2>W+150) return;
-  drawBgPlanet(x,baseY,r,c1,c2,ring,tilt);
-}
+  // subtle far-star motion only; keep it faint so the world reads as one piece.
+  drawTiledLayer(starfieldImg,{speed:.0045,alpha:.12,targetH:H*1.02,y:-H*.01,mirror:false,wobble:.5,phase:bgSeed*1.9,scaleJitter:.002});
+  drawSubtleOverlayDust();
 
-function drawSparseRuins(){
-  const portrait=isPortrait();
-  const span=W+2200;
-  const speed=.18;
-  const bases=portrait?
-    [W*.78+250, W*1.95+900] :
-    [W*.26+180, W*.92+520, W*1.56+920];
-  for(let i=0;i<bases.length;i++){
-    const x=((bases[i]-world*speed)%span+span)%span-700;
-    const y=H*(portrait?(i%2?.61:.66):(i%2?.57:.63));
-    const sc=portrait?(i%2?.78:.92):(i%2?.88:1.05);
-    if(x>-160 && x<W+160){
-      ctx.save();
-      ctx.globalAlpha=portrait?.62:.70;
-      drawRuinCluster(x+14,y+14,i+13,sc*1.02);
-      ctx.globalCompositeOperation='source-atop';
-      ctx.fillStyle='rgba(0,0,0,.20)';
-      ctx.fillRect(x-80,y-80,180,140);
-      ctx.restore();
-      ctx.save();
-      ctx.globalAlpha=portrait?.92:.96;
-      drawRuinCluster(x,y,i+7,sc);
-      ctx.restore();
-    }
-  }
-}
+  // top-space vignette and lower-atmosphere depth to reduce the flat poster feel.
+  let g=ctx.createLinearGradient(0,0,0,H*.44);
+  g.addColorStop(0,'rgba(0,0,0,.24)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.44);
 
-function drawLowerCosmicAtmosphere(){
-  const portrait=isPortrait();
-  const t=performance.now();
+  g=ctx.createLinearGradient(0,H*.42,0,H);
+  g.addColorStop(0,'rgba(0,0,0,0)');
+  g.addColorStop(.55,'rgba(86,58,141,.03)');
+  g.addColorStop(1,'rgba(7,3,18,.24)');
+  ctx.fillStyle=g;ctx.fillRect(0,H*.42,W,H*.58);
 
-  // Low mist band. Soft gradient only, no rectangular scenic strip.
-  const fog=ctx.createLinearGradient(0,H*.58,0,H);
-  fog.addColorStop(0,'rgba(70,54,133,0)');
-  fog.addColorStop(.35,'rgba(102,72,167,.045)');
-  fog.addColorStop(.72,'rgba(83,126,180,.07)');
-  fog.addColorStop(1,'rgba(20,11,46,.16)');
-  ctx.fillStyle=fog;
-  ctx.fillRect(0,H*.58,W,H*.42);
-
-  // Distant terrain silhouettes, intentionally vague so the actual platforms stay readable.
+  // very subtle edge shade makes the world feel deeper and hides any remaining boundaries.
   ctx.save();
-  ctx.globalAlpha=portrait?.16:.20;
-  ctx.fillStyle='#130d2c';
-  const baseY=H*(portrait?.79:.80);
-  ctx.beginPath();
-  ctx.moveTo(0,H);
-  ctx.lineTo(0,baseY);
-  for(let x=0;x<=W+40;x+=40){
-    const h=14+seeded01(x*.071+31)*36;
-    ctx.lineTo(x,baseY-h);
-  }
-  ctx.lineTo(W,H);
-  ctx.closePath();
-  ctx.fill();
+  let side=ctx.createLinearGradient(0,0,W*.14,0);
+  side.addColorStop(0,'rgba(0,0,0,.22)'); side.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=side; ctx.fillRect(0,0,W*.16,H);
+  side=ctx.createLinearGradient(W,0,W*.86,0);
+  side.addColorStop(0,'rgba(0,0,0,.22)'); side.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=side; ctx.fillRect(W*.84,0,W*.16,H);
   ctx.restore();
 
-  // Sparse floating crystal dust close to the running world.
-  const count=portrait?12:18;
+  // lane veil kept extremely light for UI readability without making the scenery transparent.
+  const lane=ctx.createLinearGradient(0,H*.18,0,H*.88);
+  lane.addColorStop(0,'rgba(4,3,12,0)');
+  lane.addColorStop(.72,'rgba(4,3,12,.018)');
+  lane.addColorStop(1,'rgba(4,3,12,.07)');
+  ctx.fillStyle=lane;ctx.fillRect(0,0,W,H);
+}
+
+function drawMasterPanorama(img,{alpha=1,blur=0,brightness=.96,saturate=1.06,offsetX=0,offsetY=0}={}){
+  if(!img.complete || !img.naturalWidth) return;
+  const portrait=isPortrait();
+  const baseScale=Math.max(W/img.naturalWidth,H/img.naturalHeight);
+  const scale=baseScale*(portrait?1.34:1.22);
+  const dw=img.naturalWidth*scale;
+  const dh=img.naturalHeight*scale;
+  const extraX=Math.max(0,dw-W);
+  const drift=extraX?((Math.sin(world*.00016+bgSeed*5.7)+1)*.5)*extraX:0;
+  const x=-drift+offsetX;
+  const y=(H-dh)*(portrait?.34:.25)+(portrait?18:8)+offsetY;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.filter=`blur(${blur}px) brightness(${brightness}) saturate(${saturate})`;
+  ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,x,y,dw,dh);
+  ctx.restore();
+}
+
+function drawSubtleOverlayDust(){
+  const t=performance.now();
+  const count=isPortrait()?12:18;
+  ctx.save();
   for(let i=0;i<count;i++){
-    const span=W+200;
-    const x=((seeded01(i+901)*span-world*.28)%span+span)%span-100;
-    const y=H*(.62+seeded01(i+441)*.25)+Math.sin(t*.001+i)*4;
-    const a=.08+seeded01(i+333)*.10;
-    ctx.globalAlpha=a;
-    ctx.fillStyle=i%3===0?'#ff76d8':i%3===1?'#6ee8ff':'#a88cff';
-    ctx.beginPath();
-    ctx.moveTo(x,y-4);ctx.lineTo(x+3,y);ctx.lineTo(x,y+5);ctx.lineTo(x-3,y);ctx.closePath();ctx.fill();
+    const px=((i*173-(world*(.014+i*.0003)))%(W+160)+(W+160))%(W+160)-60;
+    const py=((i*97)%Math.floor(H*.72))+18;
+    const tw=(Math.sin(t*.0017+i*1.11)+1)*.5;
+    const s=1+(i%2)+(tw>.84?1:0);
+    ctx.globalAlpha=.03+tw*.05;
+    ctx.fillStyle=i%4===0?'#ffe4ff':i%3===0?'#8fefff':'#c9a3ff';
+    ctx.fillRect(px-s,py,2*s+1,1);
+    ctx.fillRect(px,py-s,1,2*s+1);
   }
-  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function drawProceduralFarSpace(){
+  const portrait=isPortrait();
+  const t=performance.now();
+  // Seamless procedural galaxy base: no image tiles, no seams, no scenic bands.
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#01030a');
+  bg.addColorStop(.40,'#05071b');
+  bg.addColorStop(.72,'#0d071d');
+  bg.addColorStop(1,'#03020b');
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,W,H);
+
+  // Large soft nebula pockets made in-engine so the far layer loops forever cleanly.
+  ctx.save();
+  let g=ctx.createRadialGradient(W*.22,H*.22,0,W*.22,H*.22,Math.max(W,H)*.58);
+  g.addColorStop(0,'rgba(56,126,255,.14)');
+  g.addColorStop(.40,'rgba(74,39,170,.09)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H*.72);
+  g=ctx.createRadialGradient(W*.74,H*.30,0,W*.74,H*.30,Math.max(W,H)*.50);
+  g.addColorStop(0,'rgba(255,54,198,.085)');
+  g.addColorStop(.42,'rgba(108,42,170,.06)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H*.72);
+  ctx.restore();
+
+  // Deterministic multi-depth stars. Positions wrap mathematically, so there is never a visible image seam.
+  ctx.save();
+  for(let i=0;i<(portrait?105:155);i++){
+    const depth=(i%3)+1;
+    const span=W+120;
+    const speed=.0028*depth;
+    const x=((i*173.71 - world*speed) % span + span) % span - 40;
+    const y=14 + ((i*97.13 + (i%7)*31) % Math.max(80,H*.60));
+    const tw=.55+.45*Math.sin(t*.0011+i*1.91);
+    const r=depth===1?0.7:depth===2?1.1:1.55;
+    ctx.globalAlpha=(depth===1?.22:depth===2?.34:.46)*(.72+tw*.28);
+    ctx.fillStyle=i%13===0?'#ffd5ff':i%9===0?'#9eefff':'#ffffff';
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    if(i%29===0){
+      ctx.globalAlpha=.16+.12*tw;
+      ctx.fillRect(x-3,y,7,1); ctx.fillRect(x,y-3,1,7);
+    }
+  }
+  ctx.restore();
 }
 
 function drawGalaxyArtLoop(){
   const portrait=isPortrait();
   const t=performance.now();
 
-  drawProceduralGalaxyBase();
+  drawProceduralFarSpace();
+  // Keep the existing distant black hole as part of the far layer.
+  drawBlackHole(W*(portrait?.84:.80)+Math.sin(world*.00022)*16,H*(portrait?.16:.14),portrait?40:54,t);
 
-  // Farthest hero object: almost stationary black hole, centered high and drifting only a few pixels.
-  const bhX=W*(portrait?.58:.56)+Math.sin(t*.00013+bgSeed)*W*.025;
-  const bhY=H*(portrait?.18:.20)+Math.cos(t*.00010)*H*.008;
-  drawBlackHole(bhX,bhY,portrait?Math.min(W,H)*.095:Math.min(W,H)*.105,t);
+  let glow=ctx.createRadialGradient(W*.58,H*(portrait?.24:.18),20,W*.58,H*(portrait?.24:.18),W*.52);
+  glow.addColorStop(0,'rgba(148,104,255,.16)');
+  glow.addColorStop(.45,'rgba(85,43,154,.10)');
+  glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow;
+  ctx.fillRect(0,0,W,H*.65);
 
-  // Independent celestial bodies. Very slow parallax = huge distance.
-  drawScenePlanet(W*.12+120,H*(portrait?.34:.36),portrait?92:125,.050,'#1b2857','#7443b9','#8d71ff',-.16);
-  drawScenePlanet(W*.86+980,H*(portrait?.29:.31),portrait?58:82,.072,'#1f315d','#4c7bbb','#75e7ff',null,0);
-  if(!portrait){
-    drawScenePlanet(W*1.42+1460,H*.22,54,.064,'#2b174e','#8c3e9c','#ff77d4',.12);
-  }
+  drawMasterPanorama(masterPanoImg,{alpha:.18,blur:10,brightness:.28,saturate:.80,offsetX:14,offsetY:14});
+  drawMasterPanorama(masterPanoImg,{alpha:.95,brightness:.97,saturate:1.05});
 
-  // Slight atmospheric wash behind the ruins to sell distance.
-  const horizon=ctx.createLinearGradient(0,H*.46,0,H*.78);
-  horizon.addColorStop(0,'rgba(90,69,170,0)');
-  horizon.addColorStop(.58,'rgba(112,84,191,.05)');
-  horizon.addColorStop(1,'rgba(133,101,194,.10)');
-  ctx.fillStyle=horizon;ctx.fillRect(0,H*.46,W,H*.34);
-
-  // Closest background structures: sparse, separated, and faster than planets.
-  drawSparseRuins();
-
-  drawLowerCosmicAtmosphere();
-
-  // Edge vignette for depth/readability, no hard bands.
   ctx.save();
-  let left=ctx.createLinearGradient(0,0,W*.14,0);
-  left.addColorStop(0,'rgba(0,0,0,.24)');left.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=left;ctx.fillRect(0,0,W*.16,H);
-  let right=ctx.createLinearGradient(W,0,W*.86,0);
-  right.addColorStop(0,'rgba(0,0,0,.24)');right.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=right;ctx.fillRect(W*.84,0,W*.16,H);
+  const mask=ctx.createLinearGradient(0,H*.58,0,H);
+  mask.addColorStop(0,'rgba(255,255,255,0)');
+  mask.addColorStop(.18,'rgba(255,255,255,.22)');
+  mask.addColorStop(.55,'rgba(255,255,255,.72)');
+  mask.addColorStop(1,'rgba(255,255,255,.96)');
+  ctx.fillStyle=mask;
+  ctx.fillRect(0,H*.58,W,H*.42);
+  ctx.globalCompositeOperation='source-in';
+  drawTiledLayer(lowerAtmoImg,{speed:.020,alpha:.82,targetH:H*(portrait?.15:.13),y:H*(portrait?.82:.84),mirror:true,wobble:1.0,phase:bgSeed*1.3});
+  ctx.restore();
+
+  drawSubtleOverlayDust();
+
+  let topShade=ctx.createLinearGradient(0,0,0,H*.24);
+  topShade.addColorStop(0,'rgba(0,0,0,.28)');
+  topShade.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=topShade;
+  ctx.fillRect(0,0,W,H*.24);
+
+  let bottomShade=ctx.createLinearGradient(0,H*.62,0,H);
+  bottomShade.addColorStop(0,'rgba(0,0,0,0)');
+  bottomShade.addColorStop(1,'rgba(0,0,0,.20)');
+  ctx.fillStyle=bottomShade;
+  ctx.fillRect(0,H*.62,W,H*.38);
+
+  ctx.save();
+  let side=ctx.createLinearGradient(0,0,W*.16,0);
+  side.addColorStop(0,'rgba(0,0,0,.20)');
+  side.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=side;
+  ctx.fillRect(0,0,W*.16,H);
+  side=ctx.createLinearGradient(W,0,W*.84,0);
+  side.addColorStop(0,'rgba(0,0,0,.20)');
+  side.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=side;
+  ctx.fillRect(W*.84,0,W*.16,H);
   ctx.restore();
 }
-
 function draw(){
  ctx.save();
  ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
