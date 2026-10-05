@@ -1964,8 +1964,8 @@ function drawParadox(){
    // V29 visual-only normalization: match approved grounded-run body size.
    // Dash mechanics/hitbox remain untouched.
    frameKey='dash_01';
-   scaleX=1.258;
-   scaleY=1.258;
+   scaleX=1.264;
+   scaleY=1.264;
  }else if(!P.onGround){
    if(P.jumps>=2){
      // Double jump: rising pose -> arms-spread fall, blended around the apex.
@@ -1973,8 +1973,8 @@ function drawParadox(){
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.278;
-       scaleY=1.278;
+       scaleX=1.211;
+       scaleY=1.211;
        rot=-.050;
      }else{
        frameKey='fall_01';
@@ -1990,16 +1990,16 @@ function drawParadox(){
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.278;
-       scaleY=1.278;
+       scaleX=1.211;
+       scaleY=1.211;
        rot=-.018;
      }else if(P.vy<-220){
        // Hold the takeoff pose into early ascent so the jump visibly launches.
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.278;
-       scaleY=1.278;
+       scaleX=1.211;
+       scaleY=1.211;
        rot=-.045;
        poseLift=-2;
      }else if(P.vy<95){
@@ -2020,7 +2020,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V29 production patch: action-state visual scale normalized to approved grounded-run size.
+   // V30 production micro-tune: silhouette-normalized action-state scale matched to approved grounded-run size.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
