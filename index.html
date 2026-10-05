@@ -1964,8 +1964,8 @@ function drawParadox(){
    // V31 visual-only normalization using opaque body occupancy, not frame/cell size.
    // Dash mechanics/hitbox remain untouched.
    frameKey='dash_01';
-   scaleX=1.431;
-   scaleY=1.431;
+   scaleX=1.515;
+   scaleY=1.515;
  }else if(!P.onGround){
    if(P.jumps>=2){
      // Double jump: rising pose -> arms-spread fall, blended around the apex.
@@ -1973,15 +1973,15 @@ function drawParadox(){
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.309;
-       scaleY=1.309;
+       scaleX=1.375;
+       scaleY=1.375;
        rot=-.050;
      }else{
        frameKey='fall_01';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.195;
-       scaleY=1.195;
+       scaleX=1.255;
+       scaleY=1.255;
        rot=Math.max(-.020,Math.min(.040,P.vy/850));
      }
    }else{
@@ -1990,16 +1990,16 @@ function drawParadox(){
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.309;
-       scaleY=1.309;
+       scaleX=1.375;
+       scaleY=1.375;
        rot=-.018;
      }else if(P.vy<-220){
        // Hold the takeoff pose into early ascent so the jump visibly launches.
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.309;
-       scaleY=1.309;
+       scaleX=1.375;
+       scaleY=1.375;
        rot=-.045;
        poseLift=-2;
      }else if(P.vy<95){
@@ -2007,20 +2007,20 @@ function drawParadox(){
        frameKey='fall_01';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.195;
-       scaleY=1.195;
+       scaleX=1.255;
+       scaleY=1.255;
        rot=Math.max(-.018,Math.min(.015,P.vy/900));
      }else{
        frameKey='fall_01';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.195;
-       scaleY=1.195;
+       scaleX=1.255;
+       scaleY=1.255;
        rot=.032;
      }
    }
  }else{
-   // V31 production body-occupancy normalization: action states matched to the actual opaque Paradox body area in the approved run frames.
+   // V32 production perceptual-parity pass: action states micro-boosted to visually match approved grounded-run body size.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
