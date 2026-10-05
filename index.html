@@ -1961,11 +1961,11 @@ function drawParadox(){
      deathFilter='none';
    }
  }else if(P.dash>0){
-   // V31 visual-only normalization using opaque body occupancy, not frame/cell size.
-   // Dash mechanics/hitbox remain untouched.
+   // V33: dash BODY parity pass.
+   // Visual scale only. Dash mechanics, timing, and collision footprint are untouched.
    frameKey='dash_01';
-   scaleX=1.515;
-   scaleY=1.515;
+   scaleX=1.600;
+   scaleY=1.600;
  }else if(!P.onGround){
    if(P.jumps>=2){
      // Double jump: rising pose -> arms-spread fall, blended around the apex.
@@ -2020,7 +2020,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V32 production perceptual-parity pass: action states micro-boosted to visually match approved grounded-run body size.
+   // V33 production patch: dash body parity + trail cohesion.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
@@ -2080,15 +2080,17 @@ function drawParadox(){
  // This removes repeated hands/limbs from the trail while preserving the locked dash pose.
  if(!dead && P.dash>0){
    const trailY=drawY+targetH*.53;
-   const trailX=drawX+targetW*.18;
+   // V33: attach the streak cluster to the smoke/body instead of leaving it floating behind.
+   // The right edge moves toward the dash sprite, and the streaks are vertically packed tighter.
+   const trailX=drawX+targetW*.30;
    const pulse=(Math.sin(now*.035)+1)*.5;
    ctx.save();
    ctx.lineCap='round';
    const streaks=[
-     {dy:-7,len:62,a:.34,w:4},
-     {dy:-2,len:88,a:.26,w:3},
-     {dy: 3,len:74,a:.22,w:3},
-     {dy: 8,len:48,a:.18,w:2}
+     {dy:-4,len:56,a:.34,w:4},
+     {dy:-1,len:70,a:.28,w:3},
+     {dy: 2,len:62,a:.24,w:3},
+     {dy: 5,len:44,a:.20,w:2}
    ];
    for(let i=0;i<streaks.length;i++){
      const s=streaks[i];
