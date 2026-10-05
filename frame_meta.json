@@ -1,0 +1,68 @@
+{
+  "run_01": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  },
+  "run_02": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  },
+  "run_03": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  },
+  "run_04": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  },
+  "run_05": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  },
+  "run_06": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  },
+  "jump_takeoff": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  },
+  "jump_air": {
+    "anchorX": 0.5,
+    "anchorY": 0.72,
+    "w": 320,
+    "h": 280
+  },
+  "fall_01": {
+    "anchorX": 0.5,
+    "anchorY": 0.72,
+    "w": 320,
+    "h": 280
+  },
+  "dash_01": {
+    "anchorX": 0.5,
+    "anchorY": 0.72,
+    "w": 320,
+    "h": 280
+  },
+  "death_01": {
+    "anchorX": 0.5,
+    "anchorY": 0.88571,
+    "w": 320,
+    "h": 280
+  }
+}
