@@ -459,7 +459,7 @@ function update(dt){
  }
  if(wasGround&&!landed)P.coyote=.12;
 
- // V23 dedicated grounded-run animator.
+ // V24 grounded-run animator clock retained for state telemetry.
  // Advance only while Paradox is actually grounded and not dashing.
  // This makes the gait independent of render timing, landing FX, and browser clock quirks.
  if(P.onGround && running && !dead && P.dash<=0){
@@ -1887,14 +1887,14 @@ paradoxRunImg.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABLwAAAPoCAYAAAD
 
 // PARADOX V15: ISOLATED TRANSPARENT FRAME ASSETS (NO RUNTIME SPRITE SHEET)
 const paradoxFrames={};
-paradoxFrames['run_01']=new Image(); paradoxFrames['run_01'].src='run_01.png?v=23';
-paradoxFrames['run_02']=new Image(); paradoxFrames['run_02'].src='run_02.png?v=23';
-paradoxFrames['run_03']=new Image(); paradoxFrames['run_03'].src='run_03.png?v=23';
-paradoxFrames['run_04']=new Image(); paradoxFrames['run_04'].src='run_04.png?v=23';
-paradoxFrames['run_05']=new Image(); paradoxFrames['run_05'].src='run_05.png?v=23';
-paradoxFrames['run_06']=new Image(); paradoxFrames['run_06'].src='run_06.png?v=23';
-paradoxFrames['run_07']=new Image(); paradoxFrames['run_07'].src='run_07.png?v=23';
-paradoxFrames['run_08']=new Image(); paradoxFrames['run_08'].src='run_08.png?v=23';
+paradoxFrames['run_01']=new Image(); paradoxFrames['run_01'].src='run_01.png?v=24';
+paradoxFrames['run_02']=new Image(); paradoxFrames['run_02'].src='run_02.png?v=24';
+paradoxFrames['run_03']=new Image(); paradoxFrames['run_03'].src='run_03.png?v=24';
+paradoxFrames['run_04']=new Image(); paradoxFrames['run_04'].src='run_04.png?v=24';
+paradoxFrames['run_05']=new Image(); paradoxFrames['run_05'].src='run_05.png?v=24';
+paradoxFrames['run_06']=new Image(); paradoxFrames['run_06'].src='run_06.png?v=24';
+paradoxFrames['run_07']=new Image(); paradoxFrames['run_07'].src='run_07.png?v=24';
+paradoxFrames['run_08']=new Image(); paradoxFrames['run_08'].src='run_08.png?v=24';
 paradoxFrames['jump_takeoff']=new Image(); paradoxFrames['jump_takeoff'].src='jump_takeoff.png';
 paradoxFrames['jump_air']=new Image(); paradoxFrames['jump_air'].src='jump_air.png';
 paradoxFrames['fall_01']=new Image(); paradoxFrames['fall_01'].src='fall_01.png';
@@ -2010,31 +2010,37 @@ function drawParadox(){
        rot=.032;
      }
    }
- }else if(P.landVisual>0){
-   frameKey='run_02';
-   nextFrameKey='run_03';
-   blend=1-Math.max(0,Math.min(1,P.landVisual/.10));
-   const q=P.landVisual/.10;
-   scaleY=.965+(1-q)*.035;
-   scaleX=1.018;
- }else if(!running){
-   frameKey='run_01';
  }else{
-   // V23 dedicated grounded-run animator.
-   // A simulation-time clock explicitly advances the eight approved Classic poses.
-   // No crossfade: each limb pose reads cleanly at phone scale.
-   const fps=Math.min(11.25,8.5*speedMult);
-   const runKeys=['run_01','run_02','run_03','run_04','run_05','run_06','run_07','run_08'];
-   const baseIndex=Math.floor((P.runAnimT||0)*fps)%runKeys.length;
-   frameKey=runKeys[baseIndex];
-   nextFrameKey=null;
-   blend=0;
+   // V24 grounded locomotion renderer.
+   // Grounded running ALWAYS owns the frame choice now.
+   // Landing no longer replaces the run sprite; it only adds a brief settle transform.
+   if(!running){
+     frameKey='run_01';
+   }else{
+     const runKeys=['run_01','run_02','run_03','run_04','run_05','run_06','run_07','run_08'];
 
-   // Very small body rhythm only; all major movement comes from the actual limb poses.
-   const poseRot=[-.014,-.010,-.004,.004,.014,.010,.004,-.004];
-   const poseY=[0,1,2,1,0,1,2,1];
-   rot=poseRot[baseIndex];
-   poseLift-=poseY[baseIndex];
+     // Use render-time cadence as the final source of truth so no gameplay state can starve animation.
+     // ~7.8 fps is deliberately readable on a phone while still feeling quick.
+     const frameMs=128;
+     const baseIndex=Math.floor(now/frameMs)%runKeys.length;
+
+     frameKey=runKeys[baseIndex];
+     nextFrameKey=null;
+     blend=0;
+
+     // Small grounded body rhythm only; limb motion comes from the approved frame art.
+     const poseRot=[-.016,-.011,-.005,.004,.016,.011,.005,-.004];
+     const poseY=[0,1,2,1,0,1,2,1];
+     rot=poseRot[baseIndex];
+     poseLift-=poseY[baseIndex];
+
+     // Landing is now additive instead of substituting frames.
+     if(P.landVisual>0){
+       const q=Math.max(0,Math.min(1,P.landVisual/.10));
+       scaleY*=.965+(1-q)*.035;
+       scaleX*=1.018;
+     }
+   }
  }
 
  let img=imgOverride || paradoxFrames[frameKey];
