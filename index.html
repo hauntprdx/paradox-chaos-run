@@ -2005,21 +2005,18 @@ function drawParadox(){
  }else if(!running){
    frameKey='run_01';
  }else{
-   // V18 readable six-pose run.
-   // Each pose gets a tiny body mechanic so the cycle reads on a phone screen.
-   const fps=Math.min(12.25,10.25*speedMult);
+   // V19 Classic locomotion: readable discrete six-pose cycle.
+   // The PNGs now contain the limb travel; renderer no longer fakes it with body scaling.
+   const fps=Math.min(9.6,8.15*speedMult);
    const phase=(now/1000)*fps;
    const baseIndex=Math.floor(phase)%6;
    const runKeys=['run_01','run_02','run_03','run_04','run_05','run_06'];
-   const poseRot=[-.022,-.012,.004,.021,.010,-.006];
-   const poseScaleX=[1.012,1.020,1.006,.992,.985,1.000];
-   const poseShiftX=[-1,0,2,1,-1,-2];
    frameKey=runKeys[baseIndex];
    nextFrameKey=null;
    blend=0;
+   // Stable torso / low bob. Only a tiny forward-drive tilt remains.
+   const poseRot=[-.012,-.007,0,.010,.006,-.004];
    rot=poseRot[baseIndex];
-   scaleX=poseScaleX[baseIndex];
-   knockX+=poseShiftX[baseIndex];
  }
 
  let img=imgOverride || paradoxFrames[frameKey];
