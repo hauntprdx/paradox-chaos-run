@@ -1951,35 +1951,48 @@ function drawParadox(){
  }else if(!P.onGround){
    if(P.jumps>=2){
      // Double jump: rising pose -> arms-spread fall, blended around the apex.
-     if(P.vy<-120){
-       frameKey='jump_air';
-     }else if(P.vy<145){
-       frameKey='jump_air';
-       nextFrameKey='fall_01';
-       blend=Math.max(0,Math.min(1,(P.vy+120)/265));
+     if(P.jumpVisual>.025 || P.vy<-250){
+       frameKey='jump_takeoff';
+       nextFrameKey=null;
+       blend=0;
+       scaleY=1.03;
+       scaleX=.98;
+       rot=-.050;
      }else{
        frameKey='fall_01';
+       nextFrameKey=null;
+       blend=0;
+       rot=Math.max(-.020,Math.min(.040,P.vy/850));
      }
-     rot=Math.max(-.035,Math.min(.035,P.vy/800));
    }else{
      // First jump: takeoff -> ascent -> apex -> fall, with blends instead of hard snaps.
-     if(P.jumpVisual>.045){
+     if(P.jumpVisual>.035){
        frameKey='jump_takeoff';
-       nextFrameKey='jump_air';
-       blend=1-Math.max(0,Math.min(1,(P.jumpVisual-.045)/.055));
-       scaleY=.975;
-       scaleX=1.018;
-     }else if(P.vy<-180){
-       frameKey='jump_air';
-       rot=-.028;
-     }else if(P.vy<140){
-       frameKey='jump_air';
-       nextFrameKey='fall_01';
-       blend=Math.max(0,Math.min(1,(P.vy+180)/320));
-       rot=(blend-.5)*.028;
+       nextFrameKey=null;
+       blend=0;
+       scaleY=.955;
+       scaleX=1.035;
+       rot=-.018;
+     }else if(P.vy<-220){
+       // Hold the takeoff pose into early ascent so the jump visibly launches.
+       frameKey='jump_takeoff';
+       nextFrameKey=null;
+       blend=0;
+       scaleY=1.025;
+       scaleX=.985;
+       rot=-.045;
+       poseLift=-2;
+     }else if(P.vy<95){
+       // Apex: switch to the arms-spread airborne/fall art.
+       frameKey='fall_01';
+       nextFrameKey=null;
+       blend=0;
+       rot=Math.max(-.018,Math.min(.015,P.vy/900));
      }else{
        frameKey='fall_01';
-       rot=.026;
+       nextFrameKey=null;
+       blend=0;
+       rot=.032;
      }
    }
  }else if(P.landVisual>0){
@@ -1992,19 +2005,21 @@ function drawParadox(){
  }else if(!running){
    frameKey='run_01';
  }else{
-   // V17 readable six-pose run.
-   // Do NOT crossfade pixel-art poses at phone scale: it makes motion read as static.
-   const fps=Math.min(13.25,10.75*speedMult);
+   // V18 readable six-pose run.
+   // Each pose gets a tiny body mechanic so the cycle reads on a phone screen.
+   const fps=Math.min(12.25,10.25*speedMult);
    const phase=(now/1000)*fps;
    const baseIndex=Math.floor(phase)%6;
    const runKeys=['run_01','run_02','run_03','run_04','run_05','run_06'];
+   const poseRot=[-.022,-.012,.004,.021,.010,-.006];
+   const poseScaleX=[1.012,1.020,1.006,.992,.985,1.000];
+   const poseShiftX=[-1,0,2,1,-1,-2];
    frameKey=runKeys[baseIndex];
    nextFrameKey=null;
    blend=0;
-
-   // Tiny full-body drive without vertical pogo.
-   rot=Math.sin(phase*Math.PI/3)*.014;
-   scaleX=1+Math.sin(phase*Math.PI/3)*.010;
+   rot=poseRot[baseIndex];
+   scaleX=poseScaleX[baseIndex];
+   knockX+=poseShiftX[baseIndex];
  }
 
  let img=imgOverride || paradoxFrames[frameKey];
@@ -2028,13 +2043,34 @@ function drawParadox(){
  ctx.imageSmoothingEnabled=false;
  ctx.filter=deathFilter;
 
- // LOCKED approved dash ghost remains behind the main sprite.
+ // V18: dash trail uses pure energy streaks, never ghost copies of Paradox.
+ // This removes repeated hands/limbs from the trail while preserving the locked dash pose.
  if(!dead && P.dash>0){
-   for(let i=4;i>=1;i--){
-     ctx.globalAlpha=.075*i;
-     ctx.drawImage(img,drawX-i*15,drawY,targetW,targetH);
+   const trailY=drawY+targetH*.53;
+   const trailX=drawX+targetW*.18;
+   const pulse=(Math.sin(now*.035)+1)*.5;
+   ctx.save();
+   ctx.lineCap='round';
+   const streaks=[
+     {dy:-7,len:62,a:.34,w:4},
+     {dy:-2,len:88,a:.26,w:3},
+     {dy: 3,len:74,a:.22,w:3},
+     {dy: 8,len:48,a:.18,w:2}
+   ];
+   for(let i=0;i<streaks.length;i++){
+     const s=streaks[i];
+     const grad=ctx.createLinearGradient(trailX-s.len,0,trailX,0);
+     grad.addColorStop(0,'rgba(111,55,255,0)');
+     grad.addColorStop(.45,`rgba(${i%2?104:232},${i%2?243:70},255,${s.a*(.8+.2*pulse)})`);
+     grad.addColorStop(1,'rgba(255,255,255,.46)');
+     ctx.strokeStyle=grad;
+     ctx.lineWidth=s.w;
+     ctx.beginPath();
+     ctx.moveTo(trailX-s.len,trailY+s.dy);
+     ctx.lineTo(trailX,trailY+s.dy);
+     ctx.stroke();
    }
-   ctx.globalAlpha=1;
+   ctx.restore();
  }
 
  const pivotX=cx+knockX;
