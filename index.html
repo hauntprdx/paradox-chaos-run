@@ -1930,8 +1930,10 @@ function drawParadox(){
  let knockX=0;
  let deathFilter='none';
  let imgOverride=null;
+ let debugBranch='GROUND';
 
  if(dead){
+   debugBranch='DEAD';
    // 0-.34 sec: V17 reliable color-seizure hit reaction.
    // Uses pre-tinted PNG frames so iOS/Safari cannot silently ignore canvas filters.
    if(deathTime<.34){
@@ -1963,9 +1965,11 @@ function drawParadox(){
      deathFilter='none';
    }
  }else if(P.dash>0){
+   debugBranch='DASH';
    // LOCKED approved headbutt/dash.
    frameKey='dash_01';
  }else if(!P.onGround){
+   debugBranch='AIR';
    if(P.jumps>=2){
      // Double jump: rising pose -> arms-spread fall, blended around the apex.
      if(P.jumpVisual>.025 || P.vy<-250){
@@ -2013,12 +2017,14 @@ function drawParadox(){
      }
    }
  }else{
-   // V26 diagnostic build: V25 embedded run frames + live run-frame counter.
+   // V27 diagnostic build: canvas-level branch + frame debugger.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
+     debugBranch='GROUND-IDLE';
      frameKey='run_01';
    }else{
+     debugBranch='GROUND-RUN';
      const runKeys=['run_01','run_02','run_03','run_04','run_05','run_06','run_07','run_08'];
 
      // Use render-time cadence as the final source of truth so no gameplay state can starve animation.
@@ -2123,6 +2129,32 @@ function drawParadox(){
    ctx.drawImage(img,drawX,drawY,targetW,targetH);
  }
 
+ ctx.restore();
+
+ // V27 CANVAS DEBUGGER: always visible beside Paradox, independent of DOM/CSS.
+ // Shows exact renderer branch, ground state, selected frame, and running flag.
+ ctx.save();
+ ctx.setTransform(1,0,0,1,0,0);
+ ctx.globalAlpha=1;
+ ctx.font='900 18px monospace';
+ ctx.textBaseline='top';
+ ctx.lineWidth=4;
+ const dbgX=Math.max(8,Math.min(W-250,P.x+70));
+ const dbgY=Math.max(70,Math.min(H-90,P.y-36));
+ const dbg=''+debugBranch+'  '+frameKey+'  G:'+(P.onGround?1:0)+' R:'+(running?1:0);
+ ctx.strokeStyle='rgba(0,0,0,.95)';
+ ctx.strokeText(dbg,dbgX,dbgY);
+ ctx.fillStyle='#ffffff';
+ ctx.fillText(dbg,dbgX,dbgY);
+
+ // Large single frame numeral so video review can read it instantly.
+ const fm=/run_(\\d+)/.exec(frameKey);
+ if(fm){
+   ctx.font='900 34px monospace';
+   const n=fm[1].replace(/^0/,'');
+   ctx.strokeText(n,dbgX,dbgY+24);
+   ctx.fillText(n,dbgX,dbgY+24);
+ }
  ctx.restore();
 }
 
