@@ -2017,7 +2017,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V27 diagnostic build: canvas-level branch + frame debugger.
+   // V28 diagnostic build: world-space branch + frame debugger.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
@@ -2131,29 +2131,31 @@ function drawParadox(){
 
  ctx.restore();
 
- // V27 CANVAS DEBUGGER: always visible beside Paradox, independent of DOM/CSS.
- // Shows exact renderer branch, ground state, selected frame, and running flag.
+ // V28 WORLD-SPACE DEBUGGER:
+ // Draw in the same logical coordinate system as the game, immediately above Paradox.
  ctx.save();
- ctx.setTransform(1,0,0,1,0,0);
  ctx.globalAlpha=1;
- ctx.font='900 18px monospace';
- ctx.textBaseline='top';
- ctx.lineWidth=4;
- const dbgX=Math.max(8,Math.min(W-250,P.x+70));
- const dbgY=Math.max(70,Math.min(H-90,P.y-36));
+ ctx.textBaseline='bottom';
+ ctx.textAlign='left';
+ ctx.lineJoin='round';
+ ctx.lineWidth=3;
+
+ const dbgX=Math.max(6,Math.min(W-210,P.x+4));
+ const dbgY=Math.max(26,P.y-8);
  const dbg=''+debugBranch+'  '+frameKey+'  G:'+(P.onGround?1:0)+' R:'+(running?1:0);
+
+ ctx.font='900 12px monospace';
  ctx.strokeStyle='rgba(0,0,0,.95)';
  ctx.strokeText(dbg,dbgX,dbgY);
  ctx.fillStyle='#ffffff';
  ctx.fillText(dbg,dbgX,dbgY);
 
- // Large single frame numeral so video review can read it instantly.
  const fm=/run_(\\d+)/.exec(frameKey);
  if(fm){
-   ctx.font='900 34px monospace';
+   ctx.font='900 24px monospace';
    const n=fm[1].replace(/^0/,'');
-   ctx.strokeText(n,dbgX,dbgY+24);
-   ctx.fillText(n,dbgX,dbgY+24);
+   ctx.strokeText('F'+n,dbgX,dbgY-14);
+   ctx.fillText('F'+n,dbgX,dbgY-14);
  }
  ctx.restore();
 }
