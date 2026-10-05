@@ -450,7 +450,11 @@ function update(dt){
    const px=p.x-world-viewLookAhead();
    if(P.x+P.w>px && P.x<px+p.w &&
       P.y+P.h>=p.y && P.y+P.h<=p.y+Math.max(25,P.vy*dt+8) && P.vy>=0){
-      P.y=p.y-P.h; P.vy=0; P.onGround=true; P.landVisual=.10; P.jumps=0; landed=true; break;
+      P.y=p.y-P.h; P.vy=0; P.onGround=true;
+      // V22: only trigger landing animation on an actual air -> ground transition.
+      // Previously this reset every grounded frame, permanently masking the run cycle.
+      if(!wasGround) P.landVisual=.10;
+      P.jumps=0; landed=true; break;
    }
  }
  if(wasGround&&!landed)P.coyote=.12;
@@ -2007,7 +2011,7 @@ function drawParadox(){
  }else if(!running){
    frameKey='run_01';
  }else{
-   // V21 LOCKED Classic locomotion: approved eight-frame alpha-isolated run.
+   // V22 run-state fix: V21 locked eight-frame locomotion now becomes reachable after landing.
    // Limbs move in the sprite art; renderer keeps torso stable and does not fake gait.
    const fps=Math.min(10.8,9.0*speedMult);
    const phase=(now/1000)*fps;
