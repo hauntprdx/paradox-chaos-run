@@ -141,7 +141,7 @@ let pointer={x:0,y:0,t:0};
 
 const P={
  x:130,y:0,w:44,h:62,vy:0,onGround:false,jumps:0,coyote:0,
- dash:0,dashCooldown:0,invuln:0,jumpAnim:0,jumpKind:0,jumpVisual:0,landVisual:0
+ dash:0,dashCooldown:0,invuln:0,jumpAnim:0,jumpKind:0,jumpVisual:0,landVisual:0,runAnimT:0
 };
 
 function reset(){
@@ -149,7 +149,7 @@ function reset(){
  last=performance.now(); pointer={x:0,y:0,t:0}; flash.style.opacity=0;
  particles=[]; debris=[]; shockwaves=[]; hazards=[]; narwhal=null; narwhalTimer=0; lastSpikeScore=-9999;
  bgSeed=Math.random();
- P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0; P.jumpAnim=0; P.jumpKind=0; P.jumpVisual=0; P.landVisual=0;
+ P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0; P.jumpAnim=0; P.jumpKind=0; P.jumpVisual=0; P.landVisual=0; P.runAnimT=0;
  const floorY=playFloorY();
  P.y=floorY-P.h; P.onGround=true;
  platforms=[
@@ -451,13 +451,22 @@ function update(dt){
    if(P.x+P.w>px && P.x<px+p.w &&
       P.y+P.h>=p.y && P.y+P.h<=p.y+Math.max(25,P.vy*dt+8) && P.vy>=0){
       P.y=p.y-P.h; P.vy=0; P.onGround=true;
-      // V22: only trigger landing animation on an actual air -> ground transition.
+      // V23: landing triggers once; dedicated run clock takes over afterward.
       // Previously this reset every grounded frame, permanently masking the run cycle.
       if(!wasGround) P.landVisual=.10;
       P.jumps=0; landed=true; break;
    }
  }
  if(wasGround&&!landed)P.coyote=.12;
+
+ // V23 dedicated grounded-run animator.
+ // Advance only while Paradox is actually grounded and not dashing.
+ // This makes the gait independent of render timing, landing FX, and browser clock quirks.
+ if(P.onGround && running && !dead && P.dash<=0){
+   P.runAnimT=(P.runAnimT||0)+dt;
+ }else if(!P.onGround || P.dash>0){
+   P.runAnimT=0;
+ }
 
  if(P.dash>0){
    P.dash-=dt;
@@ -1878,14 +1887,14 @@ paradoxRunImg.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABLwAAAPoCAYAAAD
 
 // PARADOX V15: ISOLATED TRANSPARENT FRAME ASSETS (NO RUNTIME SPRITE SHEET)
 const paradoxFrames={};
-paradoxFrames['run_01']=new Image(); paradoxFrames['run_01'].src='run_01.png';
-paradoxFrames['run_02']=new Image(); paradoxFrames['run_02'].src='run_02.png';
-paradoxFrames['run_03']=new Image(); paradoxFrames['run_03'].src='run_03.png';
-paradoxFrames['run_04']=new Image(); paradoxFrames['run_04'].src='run_04.png';
-paradoxFrames['run_05']=new Image(); paradoxFrames['run_05'].src='run_05.png';
-paradoxFrames['run_06']=new Image(); paradoxFrames['run_06'].src='run_06.png';
-paradoxFrames['run_07']=new Image(); paradoxFrames['run_07'].src='run_07.png';
-paradoxFrames['run_08']=new Image(); paradoxFrames['run_08'].src='run_08.png';
+paradoxFrames['run_01']=new Image(); paradoxFrames['run_01'].src='run_01.png?v=23';
+paradoxFrames['run_02']=new Image(); paradoxFrames['run_02'].src='run_02.png?v=23';
+paradoxFrames['run_03']=new Image(); paradoxFrames['run_03'].src='run_03.png?v=23';
+paradoxFrames['run_04']=new Image(); paradoxFrames['run_04'].src='run_04.png?v=23';
+paradoxFrames['run_05']=new Image(); paradoxFrames['run_05'].src='run_05.png?v=23';
+paradoxFrames['run_06']=new Image(); paradoxFrames['run_06'].src='run_06.png?v=23';
+paradoxFrames['run_07']=new Image(); paradoxFrames['run_07'].src='run_07.png?v=23';
+paradoxFrames['run_08']=new Image(); paradoxFrames['run_08'].src='run_08.png?v=23';
 paradoxFrames['jump_takeoff']=new Image(); paradoxFrames['jump_takeoff'].src='jump_takeoff.png';
 paradoxFrames['jump_air']=new Image(); paradoxFrames['jump_air'].src='jump_air.png';
 paradoxFrames['fall_01']=new Image(); paradoxFrames['fall_01'].src='fall_01.png';
@@ -2011,18 +2020,21 @@ function drawParadox(){
  }else if(!running){
    frameKey='run_01';
  }else{
-   // V22 run-state fix: V21 locked eight-frame locomotion now becomes reachable after landing.
-   // Limbs move in the sprite art; renderer keeps torso stable and does not fake gait.
-   const fps=Math.min(10.8,9.0*speedMult);
-   const phase=(now/1000)*fps;
-   const baseIndex=Math.floor(phase)%8;
+   // V23 dedicated grounded-run animator.
+   // A simulation-time clock explicitly advances the eight approved Classic poses.
+   // No crossfade: each limb pose reads cleanly at phone scale.
+   const fps=Math.min(11.25,8.5*speedMult);
    const runKeys=['run_01','run_02','run_03','run_04','run_05','run_06','run_07','run_08'];
+   const baseIndex=Math.floor((P.runAnimT||0)*fps)%runKeys.length;
    frameKey=runKeys[baseIndex];
    nextFrameKey=null;
    blend=0;
-   // Tiny forward-drive tilt only. No pogo, no scale pumping.
-   const poseRot=[-.010,-.007,-.003,.003,.009,.006,.002,-.004];
+
+   // Very small body rhythm only; all major movement comes from the actual limb poses.
+   const poseRot=[-.014,-.010,-.004,.004,.014,.010,.004,-.004];
+   const poseY=[0,1,2,1,0,1,2,1];
    rot=poseRot[baseIndex];
+   poseLift-=poseY[baseIndex];
  }
 
  let img=imgOverride || paradoxFrames[frameKey];
