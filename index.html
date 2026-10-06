@@ -672,14 +672,16 @@ function drawGalaxyThorn(h,t){
   ctx.restore();
 }
 
-function drawRingedPlanet(h,t){
+function drawRingedPlanet(h,t,variant='normal'){
   // V58: restore the chosen Ringed Planet breakaway concept.
   // Cracked Mars-like purple planet, bright ring, obvious smashable fractures.
   const phase=t*.005+h.x*.012;
   const pulse=.5+.5*Math.sin(phase*1.8);
   const bob=Math.sin(phase)*1.0;
+  const heavy=variant==='heavy';
   ctx.save();
   ctx.translate(0,bob*.35);
+  if(heavy) ctx.scale(1.12,1.12);
 
   // grounded shadow so it still reads as an obstacle on the platform
   ctx.globalAlpha=.24;
@@ -740,6 +742,20 @@ function drawRingedPlanet(h,t){
   ctx.beginPath();ctx.ellipse(0,0,31,10,0,0,Math.PI);ctx.stroke();
   ctx.restore();
 
+  // Heavy breakaway variant: same Ringed Planet family, just more damaged.
+  if(heavy){
+    ctx.strokeStyle=`rgba(255,115,70,${.78+.20*pulse})`;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-18,-2);ctx.lineTo(-9,0);ctx.lineTo(-5,7);ctx.lineTo(-1,13);
+    ctx.moveTo(13,-15);ctx.lineTo(9,-9);ctx.lineTo(12,-2);ctx.lineTo(18,2);
+    ctx.stroke();
+    ctx.globalAlpha=.18+.10*pulse;
+    ctx.fillStyle='#ff6b4a';
+    ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
   // a couple spark pixels hinting that it is unstable / smashable
   ctx.globalAlpha=.55+.25*pulse;
   ctx.fillStyle='#ffb35f';
@@ -749,7 +765,7 @@ function drawRingedPlanet(h,t){
   ctx.restore();
 }
 
-function drawOrbitalPod(h,t){
+function drawOrbitalPod_UNUSED(h,t){
   const phase=t*.004+h.x*.01;
   const pulse=.5+.5*Math.sin(phase*2);
   const sweep=Math.sin(phase)*.55;
@@ -1878,8 +1894,9 @@ function draw(){
    if(h.type==='crystal') drawCosmicCore(h,artT);
    else if(h.type==='spike') drawGalaxyThorn(h,artT);
    else if(h.type==='enemy') drawVoidStalker(h,artT);
-   else if(h.type==='table') drawRingedPlanet(h,artT);
-   else drawOrbitalPod(h,artT);
+   else if(h.type==='table') drawRingedPlanet(h,artT,'normal');
+   else if(h.type==='barrier') drawRingedPlanet(h,artT,'heavy');
+   else drawRingedPlanet(h,artT,'normal');
    ctx.restore();
  }
 
