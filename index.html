@@ -1852,7 +1852,11 @@ function draw(){
  ctx.globalAlpha=1;
 
 
- // V37 stability hotfix: Chaos Beam keeps gameplay/speed only; heavy extra FX removed.
+ // V37 stability hotfix remains intact: no heavy procedural Chaos FX.
+ // V46 uses one existing pre-rendered raster draw only, which is mobile-safe.
+ if(beam>0 && P.dash<=0 && !dead){
+   drawParadoxTrailV46(.88);
+ }
 
  drawParadox();
 
@@ -1917,6 +1921,34 @@ paradoxDeathFlashFrames[5]=new Image(); paradoxDeathFlashFrames[5].src='data:ima
 const paradoxFrameMeta={"run_01":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_02":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_03":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_04":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_05":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_06":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_07":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_08":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"jump_takeoff":{"anchorX":0.5,"anchorY":0.88571,"w":320,"h":280},"jump_air":{"anchorX":0.5,"anchorY":0.72,"w":320,"h":280},"fall_01":{"anchorX":0.5,"anchorY":0.72,"w":320,"h":280},"dash_01":{"anchorX":0.5,"anchorY":0.72,"w":320,"h":280},"death_01":{"anchorX":0.5,"anchorY":0.88571,"w":320,"h":280}};
 
 
+function drawParadoxTrailV46(alpha=.96){
+  if(!(paradoxDashTrailV43.complete && paradoxDashTrailV43.naturalWidth)) return;
+
+  const portrait=isPortrait();
+  const cx=P.x+P.w*.5;
+  const feetY=P.y+P.h;
+  const baseH=portrait?92:84;
+
+  const trailH=baseH*.820;
+  const trailW=trailH*2.67180926;
+
+  // V46 seam correction:
+  // The trail asset still contains the transparent silhouette cutout from the older,
+  // larger dash-body layer. After body parity was locked at .640, that cutout extended
+  // ~11-12 screen px behind the smaller body. Lead the trail forward by 13.5% of baseH
+  // so the effect reconnects under the back/boots without rescaling Paradox.
+  const seamLead=baseH*.135;
+
+  const trailX=cx-trailW*0.77427822+seamLead;
+  const trailY=feetY-trailH*0.89340813;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled=false;
+  ctx.globalAlpha=alpha;
+  ctx.drawImage(paradoxDashTrailV43,trailX,trailY,trailW,trailH);
+  ctx.restore();
+}
+
 function drawParadoxDashV43(){
   if(!(paradoxDashBodyV43.complete && paradoxDashBodyV43.naturalWidth)) return;
 
@@ -1936,18 +1968,7 @@ function drawParadoxDashV43(){
   const bodyX=cx-bodyW*0.59574468;
   const bodyY=feetY-bodyH*0.90579710;
 
-  if(paradoxDashTrailV43.complete && paradoxDashTrailV43.naturalWidth){
-    const trailH=baseH*.820;
-    const trailW=trailH*2.67180926;
-    const trailX=cx-trailW*0.77427822;
-    const trailY=feetY-trailH*0.89340813;
-
-    ctx.save();
-    ctx.imageSmoothingEnabled=false;
-    ctx.globalAlpha=.96;
-    ctx.drawImage(paradoxDashTrailV43,trailX,trailY,trailW,trailH);
-    ctx.restore();
-  }
+  drawParadoxTrailV46(.96);
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
@@ -2065,7 +2086,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V45 production patch: layered dash preserved; body scale locked by mask/head perceptual parity against approved run sprite.
+   // V46 production patch: V45 body parity preserved; trail seam corrected and the same raster trail is reused during Chaos Beam.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
