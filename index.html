@@ -1927,7 +1927,10 @@ function drawParadoxDashV43(){
 
   // Body and FX are intentionally independent.
   // Body gets a modest perceptual boost; trail stays smaller and longer.
-  const bodyH=baseH*.900;
+  // V44: match the dash body's actual opaque occupancy to the approved run sprites.
+  // Run median visible height = 77.86% of its cell; dash body = 99.71% of its own layer.
+  // 0.7786 / 0.9971 = 0.7808, rounded to 0.781.
+  const bodyH=baseH*.781;
   const bodyW=bodyH*1.49855072;
   const bodyX=cx-bodyW*0.59574468;
   const bodyY=feetY-bodyH*0.90579710;
@@ -2061,7 +2064,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V43 production patch: locked dash split into independent body + tapered trail render layers.
+   // V44 production patch: layered dash preserved; body scale locked by opaque-body occupancy against approved run sprites.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
