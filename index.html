@@ -1964,11 +1964,12 @@ function drawParadox(){
      deathFilter='none';
    }
  }else if(P.dash>0){
-   // V33: dash BODY parity pass.
-   // Visual scale only. Dash mechanics, timing, and collision footprint are untouched.
+   // V40: final locked dash raster already contains full-size Classic Paradox.
+   // Remove the legacy enlargement used for the older undersized dash artwork.
+   // Visual-only. Mechanics, timing, hitbox, and run/jump states remain untouched.
    frameKey='dash_01';
-   scaleX=1.600;
-   scaleY=1.600;
+   scaleX=1.000;
+   scaleY=1.000;
  }else if(!P.onGround){
    if(P.jumps>=2){
      // Double jump: rising pose -> arms-spread fall, blended around the apex.
@@ -2023,7 +2024,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V39 production patch: final locked Paradox dash raster embedded on stable V37 gameplay base.
+   // V40 production patch: final locked Paradox dash raster + corrected 1:1 visual scale.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
