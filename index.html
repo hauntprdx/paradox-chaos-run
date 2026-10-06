@@ -1932,19 +1932,17 @@ function drawParadoxTrailV46(alpha=.96,mode='dash'){
   const baseH=portrait?92:84;
   const chaosMode=mode==='chaos';
 
-  // V53 target:
-  // - pull the visual identity toward chains, not giant flame
-  // - keep only a little ember/fire presence
-  // - Chaos is still the exact headbutt render, but gets a bit more substance
-  //   through denser layering rather than more fire mass.
+  // V54: clean up the box artifact by applying the trim/fade work on an isolated
+  // offscreen canvas, then compositing the finished trail back onto the scene.
+  // Also reduce flame again so the result feels more chain-led and cohesive.
   const frameTweaks=(chaosMode?[
-    {lead:.214, y:-.006, h:.926, w:.914},
-    {lead:.228, y:-.012, h:.918, w:.904},
-    {lead:.240, y:.002,  h:.922, w:.910}
+    {lead:.210, y:-.006, h:.900, w:.886},
+    {lead:.224, y:-.012, h:.892, w:.878},
+    {lead:.236, y:.002,  h:.896, w:.882}
   ]:[
-    {lead:.194, y:-.004, h:.914, w:.904},
-    {lead:.208, y:-.010, h:.906, w:.894},
-    {lead:.220, y:.004,  h:.910, w:.900}
+    {lead:.190, y:-.004, h:.890, w:.878},
+    {lead:.204, y:-.010, h:.882, w:.870},
+    {lead:.216, y:.004,  h:.886, w:.874}
   ])[frameIndex];
 
   const trailH=Math.round(baseH*.820*frameTweaks.h);
@@ -1954,59 +1952,60 @@ function drawParadoxTrailV46(alpha=.96,mode='dash'){
   const trailX=Math.round(cx-trailW*0.77427822+seamLead);
   const trailY=Math.round(feetY-trailH*0.89340813+baseH*frameTweaks.y);
 
-  ctx.save();
-  ctx.imageSmoothingEnabled=false;
-  ctx.globalAlpha=alpha*(chaosMode ? .90 : .88);
-  ctx.drawImage(trailFrame,trailX,trailY,trailW,trailH);
+  const pad=8;
+  const off=document.createElement('canvas');
+  off.width=trailW+pad*2;
+  off.height=trailH+pad*2;
+  const ox=off.getContext('2d');
+  ox.imageSmoothingEnabled=false;
 
-  // Stronger tail reduction: eat more of the far flame so the result reads as
-  // chains with just little fire specs instead of a big soft flame blob.
-  const fadeStart=Math.round(trailX+trailW*(chaosMode ? .16 : .13));
-  const fadeWidth=Math.round(trailW*(chaosMode ? .35 : .30));
-  const fade=ctx.createLinearGradient(fadeStart,0,fadeStart+fadeWidth,0);
+  // Draw the main trail in isolated space.
+  ox.globalAlpha=alpha*(chaosMode ? .84 : .80);
+  ox.drawImage(trailFrame,pad,pad,trailW,trailH);
+
+  // Remove more of the far flame in isolated space so no background gets cut out.
+  const fadeStart=Math.round(pad+trailW*(chaosMode ? .19 : .16));
+  const fadeWidth=Math.round(trailW*(chaosMode ? .38 : .34));
+  const fade=ox.createLinearGradient(fadeStart,0,fadeStart+fadeWidth,0);
   fade.addColorStop(0,'rgba(0,0,0,0)');
-  fade.addColorStop(.55,'rgba(0,0,0,.24)');
-  fade.addColorStop(.82,'rgba(0,0,0,.62)');
-  fade.addColorStop(1,'rgba(0,0,0,.88)');
-  ctx.globalCompositeOperation='destination-out';
-  ctx.fillStyle=fade;
-  ctx.fillRect(fadeStart,trailY-4,fadeWidth+8,trailH+8);
+  fade.addColorStop(.48,'rgba(0,0,0,.28)');
+  fade.addColorStop(.78,'rgba(0,0,0,.68)');
+  fade.addColorStop(1,'rgba(0,0,0,.94)');
+  ox.globalCompositeOperation='destination-out';
+  ox.fillStyle=fade;
+  ox.fillRect(fadeStart,pad-2,fadeWidth+8,trailH+4);
 
-  // Extra subtle cleanup strip on the far tail to trim oversized flame mass.
-  ctx.fillRect(Math.round(trailX+trailW*(chaosMode ? .43 : .40)), trailY-2, Math.round(trailW*(chaosMode ? .10 : .08)), trailH+4);
+  // Hard trim a little more of the far tail so it reads like chains with ember specs.
+  ox.fillRect(Math.round(pad+trailW*(chaosMode ? .46 : .43)), pad-1, Math.round(trailW*(chaosMode ? .12 : .10)), trailH+2);
 
-  // Chaos substance: one darker, pixel-snapped echo tucked close to the main trail.
-  // This adds density/weight without turning into more fluffy fire.
+  // Chaos gets a tiny dense echo, still isolated so it won't create a scene box.
   if(chaosMode){
-    ctx.globalCompositeOperation='source-over';
-    ctx.globalAlpha=alpha*.13;
-    ctx.drawImage(trailFrame,
-      Math.round(trailX-trailW*.022),
-      Math.round(trailY+baseH*.006),
-      Math.round(trailW*.988),
+    ox.globalCompositeOperation='source-over';
+    ox.globalAlpha=alpha*.10;
+    ox.drawImage(trailFrame,
+      Math.round(pad-trailW*.018),
+      Math.round(pad+baseH*.006),
+      Math.round(trailW*.975),
       trailH
     );
-
-    // Tiny ember specks only — just a few pixel chunks near the attachment point.
-    ctx.globalAlpha=.22;
-    ctx.fillStyle='#ff9a32';
-    const emberBaseX=Math.round(trailX+trailW*.18);
-    const emberBaseY=Math.round(trailY+trailH*.46);
-    ctx.fillRect(emberBaseX, emberBaseY, 2, 2);
-    ctx.fillRect(emberBaseX-4, emberBaseY+3, 2, 2);
-    ctx.fillRect(emberBaseX+5, emberBaseY-4, 1, 1);
-    ctx.fillRect(emberBaseX+9, emberBaseY+2, 1, 1);
-  }else{
-    // Regular dash gets even fewer embers so chains stay dominant.
-    ctx.globalCompositeOperation='source-over';
-    ctx.globalAlpha=.14;
-    ctx.fillStyle='#ff9a32';
-    const emberBaseX=Math.round(trailX+trailW*.17);
-    const emberBaseY=Math.round(trailY+trailH*.47);
-    ctx.fillRect(emberBaseX, emberBaseY, 2, 2);
-    ctx.fillRect(emberBaseX+5, emberBaseY-3, 1, 1);
   }
 
+  // Composite the cleaned trail onto the main canvas.
+  ctx.save();
+  ctx.imageSmoothingEnabled=false;
+  ctx.globalAlpha=1;
+  ctx.drawImage(off,trailX-pad,trailY-pad);
+
+  // Only a couple of tiny embers near the body connection.
+  ctx.globalAlpha=chaosMode ? .18 : .12;
+  ctx.fillStyle='#ff9a32';
+  const emberBaseX=Math.round(trailX+trailW*.19);
+  const emberBaseY=Math.round(trailY+trailH*.47);
+  ctx.fillRect(emberBaseX, emberBaseY, 2, 2);
+  ctx.fillRect(emberBaseX+5, emberBaseY-3, 1, 1);
+  if(chaosMode){
+    ctx.fillRect(emberBaseX-4, emberBaseY+3, 1, 1);
+  }
   ctx.restore();
 }
 
@@ -2149,7 +2148,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V53 chain-forward chaos-substance: reduces flame further, keeps chains dominant, adds only tiny ember specs, and gives Chaos a little extra density while still using the headbutt render.
+   // V54 clean trail / no box: isolates trail cleanup offscreen so the background no longer gets a boxed artifact, while trimming flame even further and keeping the headbutt pose.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
