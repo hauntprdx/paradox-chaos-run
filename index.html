@@ -673,49 +673,79 @@ function drawGalaxyThorn(h,t){
 }
 
 function drawRingedPlanet(h,t){
-  // V56: Cosmic Breakaway. Low, chunky and unmistakably smashable.
-  const phase=t*.006+h.x*.015;
-  const pulse=.5+.5*Math.sin(phase*1.7);
-  const twitch=Math.sin(phase*2.4)*1.2;
+  // V58: restore the chosen Ringed Planet breakaway concept.
+  // Cracked Mars-like purple planet, bright ring, obvious smashable fractures.
+  const phase=t*.005+h.x*.012;
+  const pulse=.5+.5*Math.sin(phase*1.8);
+  const bob=Math.sin(phase)*1.0;
   ctx.save();
-  ctx.translate(0,twitch*.25);
+  ctx.translate(0,bob*.35);
 
-  // shadow / grounded weight
-  ctx.globalAlpha=.26;
+  // grounded shadow so it still reads as an obstacle on the platform
+  ctx.globalAlpha=.24;
   ctx.fillStyle='#090716';
-  ctx.beginPath();ctx.ellipse(0,11,28,7,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,12,27,6,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  // chunky cosmic barricade body
-  ctx.fillStyle='#302454';
-  ctx.beginPath();
-  ctx.moveTo(-25,10);ctx.lineTo(-22,-7);ctx.lineTo(-12,-14);ctx.lineTo(15,-13);
-  ctx.lineTo(25,-5);ctx.lineTo(22,11);ctx.closePath();ctx.fill();
+  // back half of the ring
+  ctx.save();
+  ctx.rotate(-.14);
+  ctx.strokeStyle=`rgba(255,179,96,${.78+.18*pulse})`;
+  ctx.lineWidth=4;
+  ctx.beginPath();ctx.ellipse(0,0,31,10,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='rgba(255,231,167,.82)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.ellipse(0,0,31,10,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.restore();
 
-  // top plate
-  ctx.fillStyle='#6550a0';
-  ctx.beginPath();
-  ctx.moveTo(-20,-7);ctx.lineTo(-10,-12);ctx.lineTo(14,-11);ctx.lineTo(20,-5);
-  ctx.lineTo(12,0);ctx.lineTo(-13,0);ctx.closePath();ctx.fill();
+  // planet sphere base
+  const g=ctx.createRadialGradient(-7,-8,3,0,0,25);
+  g.addColorStop(0,'#8f7fe2');
+  g.addColorStop(.42,'#6652b4');
+  g.addColorStop(.78,'#3e3279');
+  g.addColorStop(1,'#221b46');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();
 
-  // bright crack network, animated slightly
-  ctx.strokeStyle=`rgba(255,180,92,${.72+.24*pulse})`;
-  ctx.lineWidth=2;
+  // chunky surface patches / craters for pixel readability
+  ctx.fillStyle='#4d3e8b';
+  ctx.beginPath();ctx.arc(-9,-7,5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(8,7,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#2e255b';
+  ctx.beginPath();ctx.arc(10,-8,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(-7,9,3,0,Math.PI*2);ctx.fill();
+
+  // glowing crack network
+  ctx.strokeStyle=`rgba(255,180,79,${.76+.22*pulse})`;
+  ctx.lineWidth=2.2;
   ctx.beginPath();
-  ctx.moveTo(-7,-11);ctx.lineTo(-3,-4);ctx.lineTo(-8,3);ctx.lineTo(-5,9);
-  ctx.moveTo(-3,-4);ctx.lineTo(5,-1);ctx.lineTo(10,6);
-  ctx.moveTo(5,-1);ctx.lineTo(11,-8);
+  ctx.moveTo(-4,-20);ctx.lineTo(-2,-11);ctx.lineTo(3,-5);ctx.lineTo(1,2);ctx.lineTo(7,8);ctx.lineTo(5,18);
+  ctx.moveTo(3,-5);ctx.lineTo(11,-7);ctx.lineTo(16,-3);
+  ctx.moveTo(1,2);ctx.lineTo(-7,5);ctx.lineTo(-13,12);
+  ctx.moveTo(-2,-11);ctx.lineTo(-10,-13);ctx.lineTo(-15,-9);
   ctx.stroke();
 
-  // small metal / stone edge pixels
-  ctx.fillStyle='#9d8bc9';
-  ctx.fillRect(-23,3,5,4);ctx.fillRect(17,1,5,5);ctx.fillRect(-1,7,4,4);
+  // tiny bright crack cores
+  ctx.fillStyle='#ffd27c';
+  ctx.fillRect(1,-6,2,2);ctx.fillRect(-3,-12,2,2);ctx.fillRect(6,7,2,2);
 
-  // tiny ember vents so it belongs to Paradox's cosmic world, not a loot item
+  // front half of the ring, drawn over the planet
+  ctx.save();
+  ctx.rotate(-.14);
+  ctx.strokeStyle=`rgba(255,153,82,${.88+.10*pulse})`;
+  ctx.lineWidth=4;
+  ctx.beginPath();ctx.ellipse(0,0,31,10,0,0,Math.PI);ctx.stroke();
+  ctx.strokeStyle='#ffd89e';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.ellipse(0,0,31,10,0,0,Math.PI);ctx.stroke();
+  ctx.restore();
+
+  // a couple spark pixels hinting that it is unstable / smashable
   ctx.globalAlpha=.55+.25*pulse;
-  ctx.fillStyle='#ff9d4e';
-  ctx.fillRect(-16,-5,2,2);ctx.fillRect(14,-4,2,2);
+  ctx.fillStyle='#ffb35f';
+  ctx.fillRect(-25,-7,2,2);ctx.fillRect(24,5,2,2);ctx.fillRect(18,-15,1,1);
   ctx.globalAlpha=1;
+
   ctx.restore();
 }
 
