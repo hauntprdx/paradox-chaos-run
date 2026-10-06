@@ -1926,7 +1926,8 @@ const paradoxFrameMeta={"run_01":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":2
 
 function drawParadoxTrailV46(alpha=.96){
   const trailFrames=[paradoxDashTrailV47_0,paradoxDashTrailV47_1,paradoxDashTrailV47_2];
-  const trailFrame=trailFrames[Math.floor(performance.now()/75)%3];
+  const frameIndex=Math.floor(performance.now()/70)%3;
+  const trailFrame=trailFrames[frameIndex];
   if(!(trailFrame.complete && trailFrame.naturalWidth)) return;
 
   const portrait=isPortrait();
@@ -1934,14 +1935,24 @@ function drawParadoxTrailV46(alpha=.96){
   const feetY=P.y+P.h;
   const baseH=portrait?92:84;
 
-  const trailH=baseH*.820;
-  const trailW=trailH*2.67180926;
+  // V49: match the uploaded 3-frame reference more closely.
+  // Each frame gets a tiny forward / vertical / scale adjustment so
+  // the chains and flame feel alive instead of behaving like one static image.
+  const frameTweaks=[
+    {lead:.205, y:-.004, h:1.000, w:1.015}, // frame 1: wider explosive spread, already close to body
+    {lead:.225, y:-.012, h:.988, w:1.000}, // frame 2: tighter and slightly higher
+    {lead:.238, y:.004,  h:.996, w:1.012}  // frame 3: forward again with a subtle drop
+  ][frameIndex];
 
-  // V46 seam correction preserved exactly.
-  const seamLead=baseH*.135;
+  const trailH=baseH*.820*frameTweaks.h;
+  const trailW=trailH*2.67180926*frameTweaks.w;
+
+  // Move the trail farther forward than V48 so the flame anchors into
+  // the body/hair instead of hanging behind it.
+  const seamLead=baseH*frameTweaks.lead;
 
   const trailX=cx-trailW*0.77427822+seamLead;
-  const trailY=feetY-trailH*0.89340813;
+  const trailY=feetY-trailH*0.89340813+baseH*frameTweaks.y;
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
@@ -2087,7 +2098,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V48 dash cleanup: removed detached ghost fragments from all 3 animated trail frames; seam/scale preserved.
+   // V49 dash motion match: trail pushed forward and given frame-by-frame micro-motion to better match the 3-frame reference strip.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
