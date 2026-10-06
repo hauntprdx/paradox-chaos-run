@@ -1854,7 +1854,7 @@ function draw(){
 
  // V34: amplified Paradox signature trail during Chaos Beam.
  // Visual-only layer. Beam speed/timing, Chaos math, collisions, and sprite art are unchanged.
- if(beam>0 && !dead){
+ if(beam>0 && !dead && P.dash<=0){
    const px=P.x+P.w*.48;
    const py=P.y+P.h*.55;
    const amp=(Math.sin(now*.030)+1)*.5;
@@ -2037,11 +2037,11 @@ function drawParadox(){
      deathFilter='none';
    }
  }else if(P.dash>0){
-   // V33: dash BODY parity pass.
-   // Visual scale only. Dash mechanics, timing, and collision footprint are untouched.
+   // V35: final dash BODY parity pass.
+   // Visual scale only. Run/jump art, dash mechanics, timing, and collision footprint remain untouched.
    frameKey='dash_01';
-   scaleX=1.600;
-   scaleY=1.600;
+   scaleX=1.700;
+   scaleY=1.700;
  }else if(!P.onGround){
    if(P.jumps>=2){
      // Double jump: rising pose -> arms-spread fall, blended around the apex.
@@ -2096,7 +2096,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V34 production patch: Paradox red/gold chain-spike signature FX for dash + amplified Chaos Beam trail.
+   // V35 production patch: dash head/body parity + single cohesive dash render; Chaos Beam keeps Paradox signature FX.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
@@ -2152,81 +2152,7 @@ function drawParadox(){
  ctx.imageSmoothingEnabled=false;
  ctx.filter=deathFilter;
 
- // V34: PARADOX signature dash effect.
- // EFFECT ONLY. Approved Classic Paradox dash sprite/body stays untouched.
- if(!dead && P.dash>0){
-   const trailY=drawY+targetH*.53;
-   const trailX=drawX+targetW*.34;
-   const pulse=(Math.sin(now*.033)+1)*.5;
-
-   ctx.save();
-   ctx.lineCap='round';
-   ctx.lineJoin='round';
-
-   // Tight red / gold speed core blended directly into the body/smoke.
-   const streaks=[
-     {dy:-4,len:66,a:.58,w:4,c0:'rgba(180,8,12,0)', c1:'rgba(255,32,22,.50)', c2:'rgba(255,192,42,.76)'},
-     {dy:-1,len:82,a:.52,w:3,c0:'rgba(115,6,8,0)',  c1:'rgba(255,160,28,.46)',c2:'rgba(255,222,92,.72)'},
-     {dy: 2,len:70,a:.45,w:3,c0:'rgba(150,4,7,0)',  c1:'rgba(240,20,16,.42)', c2:'rgba(255,100,22,.68)'},
-     {dy: 5,len:50,a:.38,w:2,c0:'rgba(90,3,5,0)',   c1:'rgba(255,88,18,.36)', c2:'rgba(255,190,35,.58)'}
-   ];
-   for(let i=0;i<streaks.length;i++){
-     const s=streaks[i];
-     const x2=trailX-targetW*(.015+i*.008);
-     const x1=x2-s.len*(.90+.10*pulse);
-     const grad=ctx.createLinearGradient(x1,0,x2,0);
-     grad.addColorStop(0,s.c0);
-     grad.addColorStop(.52,s.c1);
-     grad.addColorStop(1,s.c2);
-     ctx.strokeStyle=grad;
-     ctx.lineWidth=s.w;
-     ctx.beginPath();
-     ctx.moveTo(x1,trailY+s.dy);
-     ctx.lineTo(x2,trailY+s.dy);
-     ctx.stroke();
-   }
-
-   // Gold chain links woven into the trail instead of cosmic twinkles.
-   ctx.strokeStyle=`rgba(255,196,48,${.68+.18*pulse})`;
-   ctx.lineWidth=2.1;
-   for(let i=0;i<5;i++){
-     const cx2=trailX-targetW*(.055+i*.047);
-     const cy2=trailY-9+Math.sin(i*1.55+now*.015)*4.5;
-     ctx.save();
-     ctx.translate(cx2,cy2);
-     ctx.rotate(i%2 ? -.28 : .28);
-     ctx.beginPath();
-     ctx.ellipse(0,0,5.6,2.8,0,0,Math.PI*2);
-     ctx.stroke();
-     ctx.restore();
-   }
-
-   // Black/red thorn-spike silhouettes.
-   ctx.strokeStyle=`rgba(205,24,28,${.58+.18*pulse})`;
-   ctx.lineWidth=2.1;
-   for(let i=0;i<4;i++){
-     const sx=trailX-targetW*(.12+i*.052);
-     const sy=trailY-2+(i%2?8:-7);
-     ctx.beginPath();
-     ctx.moveTo(sx-6,sy+4);
-     ctx.lineTo(sx,sy-7-(i%2)*3);
-     ctx.lineTo(sx+5,sy+3);
-     ctx.stroke();
-   }
-
-   // Dense black-to-crimson smoke hugging the boots/body.
-   for(let i=0;i<7;i++){
-     const r=4.5+(i%3)*1.5;
-     const sx=trailX-targetW*(.030+i*.026);
-     const sy=trailY+7+Math.sin(i+now*.017)*2.5;
-     ctx.fillStyle=`rgba(${85+i*16},${6+i*2},${9+i*2},${.20+.035*i})`;
-     ctx.beginPath();
-     ctx.arc(sx,sy,r,0,Math.PI*2);
-     ctx.fill();
-   }
-
-   ctx.restore();
- }
+ // V35: no separate procedural dash layer. Dash remains a single cohesive rendered entity.
 
  const pivotX=cx+knockX;
  const pivotY=anchorY;
