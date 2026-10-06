@@ -233,6 +233,9 @@ function spawnDebris(x,y,type,elite=false){
 }
 
 function addHazardOnPlatform(p,type,pos=.55){
+ // V60: the Orbital Pod/barrier archetype is retired.
+ // Any legacy barrier request is converted into the official Ringed Planet breakaway.
+ if(type==='barrier') type='table';
  const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:type==='spike'?24:46;
  const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:type==='spike'?54:52;
  const elite=type==='enemy' && score>=15000 && Math.random()<.22;
@@ -334,7 +337,7 @@ function ensureWorld(){
      platforms.push(p);
      if(Math.random()<.70){
        const r=Math.random();
-       addHazardOnPlatform(p,r<.30?'table':r<.64?'enemy':r<.84?'crystal':'barrier',.40+Math.random()*.25);
+       addHazardOnPlatform(p,r<.42?'table':r<.66?'enemy':r<.84?'crystal':'table',.40+Math.random()*.25);
      }
      if(w>460 && Math.random()<.30)addHazardOnPlatform(p,Math.random()<.56?'enemy':'crystal',.76);
 
@@ -384,7 +387,7 @@ function ensureWorld(){
      if(Math.random()<.48)addHazardOnPlatform(upper,'crystal',.76);
 
      platforms.push(lower);
-     if(Math.random()<.82)addHazardOnPlatform(lower,Math.random()<.55?'enemy':'barrier',.42);
+     if(Math.random()<.82)addHazardOnPlatform(lower,Math.random()<.52?'enemy':'table',.42);
      if(Math.random()<.48){
        // Keep the second lethal object far enough away that a skilled player can
        // chain another headbutt or jump instead of eating an unavoidable death.
@@ -673,7 +676,7 @@ function drawGalaxyThorn(h,t){
 }
 
 function drawRingedPlanet(h,t,variant='normal'){
-  // V58: restore the chosen Ringed Planet breakaway concept.
+  // V60: official and sole breakaway art: the chosen Ringed Planet concept.
   // Cracked Mars-like purple planet, bright ring, obvious smashable fractures.
   const phase=t*.005+h.x*.012;
   const pulse=.5+.5*Math.sin(phase*1.8);
@@ -765,39 +768,7 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.restore();
 }
 
-function drawOrbitalPod_UNUSED(h,t){
-  const phase=t*.004+h.x*.01;
-  const pulse=.5+.5*Math.sin(phase*2);
-  const sweep=Math.sin(phase)*.55;
-  ctx.save();
-
-  // dish/antenna sweep
-  ctx.save();
-  ctx.rotate(sweep);
-  ctx.strokeStyle='#a7c8f5';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(0,-18);ctx.lineTo(0,-29);ctx.stroke();
-  ctx.strokeStyle='#ffb45c';ctx.lineWidth=3;
-  ctx.beginPath();ctx.arc(0,-29,8,.1,Math.PI-.1);ctx.stroke();
-  ctx.restore();
-
-  ctx.fillStyle='#dfe8ff';
-  ctx.beginPath();ctx.arc(0,0,20,0,Math.PI*2);ctx.fill();
-
-  ctx.fillStyle='#253460';
-  ctx.fillRect(-18,-5,36,10);
-  ctx.fillStyle='#13172b';
-  ctx.fillRect(-8,-13,16,26);
-
-  ctx.fillStyle=`rgba(84,232,255,${.55+.4*pulse})`;
-  ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();
-
-  ctx.strokeStyle='#ffb45c';ctx.lineWidth=3;
-  ctx.beginPath();ctx.arc(0,0,14,-.8,.8);ctx.stroke();
-
-  ctx.fillStyle=pulse>.5?'#ffd07f':'#ff9f49';
-  ctx.fillRect(-23,-4,5,8);ctx.fillRect(18,-4,5,8);
-  ctx.restore();
-}
+// V60: Orbital Pod renderer removed. Ringed Planet is the sole breakaway art.
 
 function drawVoidStalker(h,t){
   // V57: closer to the chosen concept art.
@@ -1895,7 +1866,7 @@ function draw(){
    else if(h.type==='spike') drawGalaxyThorn(h,artT);
    else if(h.type==='enemy') drawVoidStalker(h,artT);
    else if(h.type==='table') drawRingedPlanet(h,artT,'normal');
-   else if(h.type==='barrier') drawRingedPlanet(h,artT,'heavy');
+   else if(h.type==='barrier') drawRingedPlanet(h,artT,'normal');
    else drawRingedPlanet(h,artT,'normal');
    ctx.restore();
  }
