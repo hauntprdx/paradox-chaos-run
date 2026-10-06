@@ -1852,80 +1852,7 @@ function draw(){
  ctx.globalAlpha=1;
 
 
- // V34: amplified Paradox signature trail during Chaos Beam.
- // Visual-only layer. Beam speed/timing, Chaos math, collisions, and sprite art are unchanged.
- if(beam>0 && !dead){
-   const px=P.x+P.w*.48;
-   const py=P.y+P.h*.55;
-   const amp=(Math.sin(now*.030)+1)*.5;
-
-   ctx.save();
-   ctx.lineCap='round';
-   ctx.lineJoin='round';
-
-   // Red/gold energy lanes
-   const beamLanes=[
-     {dy:-10,len:108,w:4,a:.42,c:'#ff2a20'},
-     {dy:-4, len:132,w:4,a:.48,c:'#ffc12f'},
-     {dy: 3, len:118,w:3,a:.38,c:'#e91517'},
-     {dy: 9, len:92, w:3,a:.34,c:'#ff711d'}
-   ];
-   for(const s of beamLanes){
-     const grad=ctx.createLinearGradient(px-s.len,0,px-8,0);
-     grad.addColorStop(0,'rgba(120,4,8,0)');
-     grad.addColorStop(.55,s.c);
-     grad.addColorStop(1,'rgba(255,220,98,.72)');
-     ctx.globalAlpha=s.a+.10*amp;
-     ctx.strokeStyle=grad;
-     ctx.lineWidth=s.w;
-     ctx.beginPath();
-     ctx.moveTo(px-s.len,py+s.dy);
-     ctx.lineTo(px-8,py+s.dy);
-     ctx.stroke();
-   }
-   ctx.globalAlpha=1;
-
-   // Larger chain sweep for the Chaos moment
-   ctx.strokeStyle=`rgba(255,198,48,${.64+.22*amp})`;
-   ctx.lineWidth=2.4;
-   for(let i=0;i<7;i++){
-     const x=px-24-i*15;
-     const y=py-13+Math.sin(i*1.35+now*.014)*7;
-     ctx.save();
-     ctx.translate(x,y);
-     ctx.rotate(i%2?-.30:.30);
-     ctx.beginPath();
-     ctx.ellipse(0,0,6.5,3.2,0,0,Math.PI*2);
-     ctx.stroke();
-     ctx.restore();
-   }
-
-   // Thorn/spike accents
-   ctx.strokeStyle=`rgba(200,18,22,${.58+.20*amp})`;
-   ctx.lineWidth=2.2;
-   for(let i=0;i<5;i++){
-     const x=px-38-i*20;
-     const y=py-2+(i%2?8:-7);
-     ctx.beginPath();
-     ctx.moveTo(x-6,y+4);
-     ctx.lineTo(x,y-8-(i%3)*2);
-     ctx.lineTo(x+5,y+3);
-     ctx.stroke();
-   }
-
-   // Crimson smoke clustered behind the body
-   for(let i=0;i<8;i++){
-     const x=px-18-i*9;
-     const y=py+9+Math.sin(i*.9+now*.018)*3;
-     const r=4.5+(i%3)*1.5;
-     ctx.fillStyle=`rgba(${90+i*13},8,12,${.16+.025*i})`;
-     ctx.beginPath();
-     ctx.arc(x,y,r,0,Math.PI*2);
-     ctx.fill();
-   }
-
-   ctx.restore();
- }
+ // V37 stability hotfix: Chaos Beam keeps gameplay/speed only; heavy extra FX removed.
 
  drawParadox();
 
@@ -2096,7 +2023,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V36 emergency stable rollback: restores the known-good V34 render/gameplay path after V35 crash.
+   // V37 stability hotfix: removes V34 procedural dash/Chaos FX while preserving all gameplay and approved run animation.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
@@ -2152,81 +2079,7 @@ function drawParadox(){
  ctx.imageSmoothingEnabled=false;
  ctx.filter=deathFilter;
 
- // V34: PARADOX signature dash effect.
- // EFFECT ONLY. Approved Classic Paradox dash sprite/body stays untouched.
- if(!dead && P.dash>0){
-   const trailY=drawY+targetH*.53;
-   const trailX=drawX+targetW*.34;
-   const pulse=(Math.sin(now*.033)+1)*.5;
-
-   ctx.save();
-   ctx.lineCap='round';
-   ctx.lineJoin='round';
-
-   // Tight red / gold speed core blended directly into the body/smoke.
-   const streaks=[
-     {dy:-4,len:66,a:.58,w:4,c0:'rgba(180,8,12,0)', c1:'rgba(255,32,22,.50)', c2:'rgba(255,192,42,.76)'},
-     {dy:-1,len:82,a:.52,w:3,c0:'rgba(115,6,8,0)',  c1:'rgba(255,160,28,.46)',c2:'rgba(255,222,92,.72)'},
-     {dy: 2,len:70,a:.45,w:3,c0:'rgba(150,4,7,0)',  c1:'rgba(240,20,16,.42)', c2:'rgba(255,100,22,.68)'},
-     {dy: 5,len:50,a:.38,w:2,c0:'rgba(90,3,5,0)',   c1:'rgba(255,88,18,.36)', c2:'rgba(255,190,35,.58)'}
-   ];
-   for(let i=0;i<streaks.length;i++){
-     const s=streaks[i];
-     const x2=trailX-targetW*(.015+i*.008);
-     const x1=x2-s.len*(.90+.10*pulse);
-     const grad=ctx.createLinearGradient(x1,0,x2,0);
-     grad.addColorStop(0,s.c0);
-     grad.addColorStop(.52,s.c1);
-     grad.addColorStop(1,s.c2);
-     ctx.strokeStyle=grad;
-     ctx.lineWidth=s.w;
-     ctx.beginPath();
-     ctx.moveTo(x1,trailY+s.dy);
-     ctx.lineTo(x2,trailY+s.dy);
-     ctx.stroke();
-   }
-
-   // Gold chain links woven into the trail instead of cosmic twinkles.
-   ctx.strokeStyle=`rgba(255,196,48,${.68+.18*pulse})`;
-   ctx.lineWidth=2.1;
-   for(let i=0;i<5;i++){
-     const cx2=trailX-targetW*(.055+i*.047);
-     const cy2=trailY-9+Math.sin(i*1.55+now*.015)*4.5;
-     ctx.save();
-     ctx.translate(cx2,cy2);
-     ctx.rotate(i%2 ? -.28 : .28);
-     ctx.beginPath();
-     ctx.ellipse(0,0,5.6,2.8,0,0,Math.PI*2);
-     ctx.stroke();
-     ctx.restore();
-   }
-
-   // Black/red thorn-spike silhouettes.
-   ctx.strokeStyle=`rgba(205,24,28,${.58+.18*pulse})`;
-   ctx.lineWidth=2.1;
-   for(let i=0;i<4;i++){
-     const sx=trailX-targetW*(.12+i*.052);
-     const sy=trailY-2+(i%2?8:-7);
-     ctx.beginPath();
-     ctx.moveTo(sx-6,sy+4);
-     ctx.lineTo(sx,sy-7-(i%2)*3);
-     ctx.lineTo(sx+5,sy+3);
-     ctx.stroke();
-   }
-
-   // Dense black-to-crimson smoke hugging the boots/body.
-   for(let i=0;i<7;i++){
-     const r=4.5+(i%3)*1.5;
-     const sx=trailX-targetW*(.030+i*.026);
-     const sy=trailY+7+Math.sin(i+now*.017)*2.5;
-     ctx.fillStyle=`rgba(${85+i*16},${6+i*2},${9+i*2},${.20+.035*i})`;
-     ctx.beginPath();
-     ctx.arc(sx,sy,r,0,Math.PI*2);
-     ctx.fill();
-   }
-
-   ctx.restore();
- }
+ // V37 stability hotfix: removed extra procedural dash FX layer.
 
  const pivotX=cx+knockX;
  const pivotY=anchorY;
