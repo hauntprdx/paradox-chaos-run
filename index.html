@@ -1852,12 +1852,8 @@ function draw(){
  ctx.globalAlpha=1;
 
 
- // V37 stability hotfix remains intact: no heavy procedural Chaos FX.
- // V46 uses one existing pre-rendered raster draw only, which is mobile-safe.
- if(beam>0 && P.dash<=0 && !dead){
-   drawParadoxTrailV46(.88);
- }
-
+ // V50: Chaos now uses the same full dash renderer as headbutt,
+ // so we no longer draw a separate trail behind the regular run sprite.
  drawParadox();
 
  if(beam>0){
@@ -1924,7 +1920,7 @@ paradoxDeathFlashFrames[5]=new Image(); paradoxDeathFlashFrames[5].src='data:ima
 const paradoxFrameMeta={"run_01":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_02":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_03":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_04":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_05":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_06":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_07":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"run_08":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":280},"jump_takeoff":{"anchorX":0.5,"anchorY":0.88571,"w":320,"h":280},"jump_air":{"anchorX":0.5,"anchorY":0.72,"w":320,"h":280},"fall_01":{"anchorX":0.5,"anchorY":0.72,"w":320,"h":280},"dash_01":{"anchorX":0.5,"anchorY":0.72,"w":320,"h":280},"death_01":{"anchorX":0.5,"anchorY":0.88571,"w":320,"h":280}};
 
 
-function drawParadoxTrailV46(alpha=.96){
+function drawParadoxTrailV46(alpha=.96,mode='dash'){
   const trailFrames=[paradoxDashTrailV47_0,paradoxDashTrailV47_1,paradoxDashTrailV47_2];
   const frameIndex=Math.floor(performance.now()/70)%3;
   const trailFrame=trailFrames[frameIndex];
@@ -1934,21 +1930,24 @@ function drawParadoxTrailV46(alpha=.96){
   const cx=P.x+P.w*.5;
   const feetY=P.y+P.h;
   const baseH=portrait?92:84;
+  const chaosMode=mode==='chaos';
 
-  // V49: match the uploaded 3-frame reference more closely.
-  // Each frame gets a tiny forward / vertical / scale adjustment so
-  // the chains and flame feel alive instead of behaving like one static image.
-  const frameTweaks=[
-    {lead:.205, y:-.004, h:1.000, w:1.015}, // frame 1: wider explosive spread, already close to body
-    {lead:.225, y:-.012, h:.988, w:1.000}, // frame 2: tighter and slightly higher
-    {lead:.238, y:.004,  h:.996, w:1.012}  // frame 3: forward again with a subtle drop
-  ][frameIndex];
+  // V50: headbutt + Chaos share one motion system.
+  // Chaos is the same graphic family, just nudged a touch farther forward
+  // and drawn slightly larger so it reads like an energized version,
+  // not a separate run sprite with a trail behind it.
+  const frameTweaks=(chaosMode?[
+    {lead:.230, y:-.006, h:1.020, w:1.030},
+    {lead:.248, y:-.014, h:1.006, w:1.015},
+    {lead:.262, y:.002,  h:1.014, w:1.026}
+  ]:[
+    {lead:.205, y:-.004, h:1.000, w:1.015},
+    {lead:.225, y:-.012, h:.988, w:1.000},
+    {lead:.238, y:.004,  h:.996, w:1.012}
+  ])[frameIndex];
 
   const trailH=baseH*.820*frameTweaks.h;
   const trailW=trailH*2.67180926*frameTweaks.w;
-
-  // Move the trail farther forward than V48 so the flame anchors into
-  // the body/hair instead of hanging behind it.
   const seamLead=baseH*frameTweaks.lead;
 
   const trailX=cx-trailW*0.77427822+seamLead;
@@ -1958,32 +1957,49 @@ function drawParadoxTrailV46(alpha=.96){
   ctx.imageSmoothingEnabled=false;
   ctx.globalAlpha=alpha;
   ctx.drawImage(trailFrame,trailX,trailY,trailW,trailH);
+
+  // Subtle tail fade so the far end of the fire dies off cleanly.
+  const fadeStart=trailX+trailW*(chaosMode ? .06 : .03);
+  const fadeWidth=trailW*(chaosMode ? .34 : .26);
+  const fade=ctx.createLinearGradient(fadeStart,0,fadeStart+fadeWidth,0);
+  fade.addColorStop(0,'rgba(0,0,0,0)');
+  fade.addColorStop(.72,'rgba(0,0,0,.18)');
+  fade.addColorStop(1,'rgba(0,0,0,.72)');
+  ctx.globalCompositeOperation='destination-out';
+  ctx.fillStyle=fade;
+  ctx.fillRect(fadeStart,trailY-4,fadeWidth+8,trailH+8);
+
+  // Tiny low-alpha pass in Chaos mode for a little extra fire texture.
+  if(chaosMode){
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=alpha*.20;
+    ctx.drawImage(trailFrame,trailX-trailW*.012,trailY+baseH*.006,trailW*1.01,trailH);
+  }
+
   ctx.restore();
 }
 
-function drawParadoxDashV43(){
+function drawParadoxDashV43(mode='dash'){
   if(!(paradoxDashBodyV43.complete && paradoxDashBodyV43.naturalWidth)) return;
 
   const portrait=isPortrait();
   const cx=P.x+P.w*.5;
   const feetY=P.y+P.h;
   const baseH=portrait?92:84;
+  const chaosMode=mode==='chaos';
 
-  // Body and FX are intentionally independent.
-  // Body gets a modest perceptual boost; trail stays smaller and longer.
-  // V45: perceptual parity lock.
-  // Total-height matching still made the dash head/mask read larger than the run sprite.
-  // The dash mask is proportionally larger inside its source layer, so normalize to mask/head scale instead.
-  // 0.640 brings dash mask height to ~1.00x the approved running mask height on-screen.
-  const bodyH=baseH*.640;
+  // V50: Chaos uses the same body graphic as headbutt and then returns
+  // to the run cycle when beam ends. A slight Chaos scale bump keeps it feeling powered-up.
+  const bodyH=baseH*(chaosMode ? .656 : .640);
   const bodyW=bodyH*1.49855072;
-  const bodyX=cx-bodyW*0.59574468;
-  const bodyY=feetY-bodyH*0.90579710;
+  const bodyX=cx-bodyW*(chaosMode ? .603 : .59574468);
+  const bodyY=feetY-bodyH*(chaosMode ? .912 : .90579710);
 
-  drawParadoxTrailV46(.96);
+  drawParadoxTrailV46(chaosMode ? .94 : .96, chaosMode ? 'chaos' : 'dash');
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
+  ctx.globalAlpha=chaosMode ? .985 : 1;
   ctx.drawImage(paradoxDashBodyV43,bodyX,bodyY,bodyW,bodyH);
   ctx.restore();
 }
@@ -1994,10 +2010,14 @@ function drawParadox(){
  const cx=P.x+P.w*.5;
  const feetY=P.y+P.h;
 
- // V43: dash has its own two-layer renderer.
- // This bypasses the legacy 320x280 character-cell geometry completely.
+ // V50: headbutt and Chaos share the same dedicated dash renderer.
+ // Headbutt uses mode='dash'; Chaos uses mode='chaos' and drops back to run when beam ends.
  if(!dead && P.dash>0){
-   drawParadoxDashV43();
+   drawParadoxDashV43('dash');
+   return;
+ }
+ if(!dead && beam>0){
+   drawParadoxDashV43('chaos');
    return;
  }
 
@@ -2098,7 +2118,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V49 dash motion match: trail pushed forward and given frame-by-frame micro-motion to better match the 3-frame reference strip.
+   // V50 chaos unification: Chaos now uses the same full dash graphic as headbutt, with tighter attachment and a subtle tail fade.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
