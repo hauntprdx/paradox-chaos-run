@@ -1922,7 +1922,7 @@ const paradoxFrameMeta={"run_01":{"anchorX":0.5,"anchorY":0.892857,"w":320,"h":2
 
 function drawParadoxTrailV46(alpha=.96,mode='dash'){
   const trailFrames=[paradoxDashTrailV47_0,paradoxDashTrailV47_1,paradoxDashTrailV47_2];
-  const frameIndex=Math.floor(performance.now()/70)%3;
+  const frameIndex=Math.floor(performance.now()/72)%3;
   const trailFrame=trailFrames[frameIndex];
   if(!(trailFrame.complete && trailFrame.naturalWidth)) return;
 
@@ -1932,48 +1932,79 @@ function drawParadoxTrailV46(alpha=.96,mode='dash'){
   const baseH=portrait?92:84;
   const chaosMode=mode==='chaos';
 
-  // V50: headbutt + Chaos share one motion system.
-  // Chaos is the same graphic family, just nudged a touch farther forward
-  // and drawn slightly larger so it reads like an energized version,
-  // not a separate run sprite with a trail behind it.
+  // V53 target:
+  // - pull the visual identity toward chains, not giant flame
+  // - keep only a little ember/fire presence
+  // - Chaos is still the exact headbutt render, but gets a bit more substance
+  //   through denser layering rather than more fire mass.
   const frameTweaks=(chaosMode?[
-    {lead:.230, y:-.006, h:1.020, w:1.030},
-    {lead:.248, y:-.014, h:1.006, w:1.015},
-    {lead:.262, y:.002,  h:1.014, w:1.026}
+    {lead:.214, y:-.006, h:.926, w:.914},
+    {lead:.228, y:-.012, h:.918, w:.904},
+    {lead:.240, y:.002,  h:.922, w:.910}
   ]:[
-    {lead:.205, y:-.004, h:1.000, w:1.015},
-    {lead:.225, y:-.012, h:.988, w:1.000},
-    {lead:.238, y:.004,  h:.996, w:1.012}
+    {lead:.194, y:-.004, h:.914, w:.904},
+    {lead:.208, y:-.010, h:.906, w:.894},
+    {lead:.220, y:.004,  h:.910, w:.900}
   ])[frameIndex];
 
-  const trailH=baseH*.820*frameTweaks.h;
-  const trailW=trailH*2.67180926*frameTweaks.w;
+  const trailH=Math.round(baseH*.820*frameTweaks.h);
+  const trailW=Math.round(trailH*2.67180926*frameTweaks.w);
   const seamLead=baseH*frameTweaks.lead;
 
-  const trailX=cx-trailW*0.77427822+seamLead;
-  const trailY=feetY-trailH*0.89340813+baseH*frameTweaks.y;
+  const trailX=Math.round(cx-trailW*0.77427822+seamLead);
+  const trailY=Math.round(feetY-trailH*0.89340813+baseH*frameTweaks.y);
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
-  ctx.globalAlpha=alpha;
+  ctx.globalAlpha=alpha*(chaosMode ? .90 : .88);
   ctx.drawImage(trailFrame,trailX,trailY,trailW,trailH);
 
-  // Subtle tail fade so the far end of the fire dies off cleanly.
-  const fadeStart=trailX+trailW*(chaosMode ? .06 : .03);
-  const fadeWidth=trailW*(chaosMode ? .34 : .26);
+  // Stronger tail reduction: eat more of the far flame so the result reads as
+  // chains with just little fire specs instead of a big soft flame blob.
+  const fadeStart=Math.round(trailX+trailW*(chaosMode ? .16 : .13));
+  const fadeWidth=Math.round(trailW*(chaosMode ? .35 : .30));
   const fade=ctx.createLinearGradient(fadeStart,0,fadeStart+fadeWidth,0);
   fade.addColorStop(0,'rgba(0,0,0,0)');
-  fade.addColorStop(.72,'rgba(0,0,0,.18)');
-  fade.addColorStop(1,'rgba(0,0,0,.72)');
+  fade.addColorStop(.55,'rgba(0,0,0,.24)');
+  fade.addColorStop(.82,'rgba(0,0,0,.62)');
+  fade.addColorStop(1,'rgba(0,0,0,.88)');
   ctx.globalCompositeOperation='destination-out';
   ctx.fillStyle=fade;
   ctx.fillRect(fadeStart,trailY-4,fadeWidth+8,trailH+8);
 
-  // Tiny low-alpha pass in Chaos mode for a little extra fire texture.
+  // Extra subtle cleanup strip on the far tail to trim oversized flame mass.
+  ctx.fillRect(Math.round(trailX+trailW*(chaosMode ? .43 : .40)), trailY-2, Math.round(trailW*(chaosMode ? .10 : .08)), trailH+4);
+
+  // Chaos substance: one darker, pixel-snapped echo tucked close to the main trail.
+  // This adds density/weight without turning into more fluffy fire.
   if(chaosMode){
     ctx.globalCompositeOperation='source-over';
-    ctx.globalAlpha=alpha*.20;
-    ctx.drawImage(trailFrame,trailX-trailW*.012,trailY+baseH*.006,trailW*1.01,trailH);
+    ctx.globalAlpha=alpha*.13;
+    ctx.drawImage(trailFrame,
+      Math.round(trailX-trailW*.022),
+      Math.round(trailY+baseH*.006),
+      Math.round(trailW*.988),
+      trailH
+    );
+
+    // Tiny ember specks only — just a few pixel chunks near the attachment point.
+    ctx.globalAlpha=.22;
+    ctx.fillStyle='#ff9a32';
+    const emberBaseX=Math.round(trailX+trailW*.18);
+    const emberBaseY=Math.round(trailY+trailH*.46);
+    ctx.fillRect(emberBaseX, emberBaseY, 2, 2);
+    ctx.fillRect(emberBaseX-4, emberBaseY+3, 2, 2);
+    ctx.fillRect(emberBaseX+5, emberBaseY-4, 1, 1);
+    ctx.fillRect(emberBaseX+9, emberBaseY+2, 1, 1);
+  }else{
+    // Regular dash gets even fewer embers so chains stay dominant.
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=.14;
+    ctx.fillStyle='#ff9a32';
+    const emberBaseX=Math.round(trailX+trailW*.17);
+    const emberBaseY=Math.round(trailY+trailH*.47);
+    ctx.fillRect(emberBaseX, emberBaseY, 2, 2);
+    ctx.fillRect(emberBaseX+5, emberBaseY-3, 1, 1);
   }
 
   ctx.restore();
@@ -1988,18 +2019,18 @@ function drawParadoxDashV43(mode='dash'){
   const baseH=portrait?92:84;
   const chaosMode=mode==='chaos';
 
-  // V50: Chaos uses the same body graphic as headbutt and then returns
-  // to the run cycle when beam ends. A slight Chaos scale bump keeps it feeling powered-up.
-  const bodyH=baseH*(chaosMode ? .656 : .640);
+  // V53: Chaos uses the exact same headbutt body frame/placement.
+  // Only the trail gets a little more density so mechanics and silhouette stay consistent.
+  const bodyH=baseH*.640;
   const bodyW=bodyH*1.49855072;
-  const bodyX=cx-bodyW*(chaosMode ? .603 : .59574468);
-  const bodyY=feetY-bodyH*(chaosMode ? .912 : .90579710);
+  const bodyX=cx-bodyW*0.59574468;
+  const bodyY=feetY-bodyH*0.90579710;
 
   drawParadoxTrailV46(chaosMode ? .94 : .96, chaosMode ? 'chaos' : 'dash');
 
   ctx.save();
   ctx.imageSmoothingEnabled=false;
-  ctx.globalAlpha=chaosMode ? .985 : 1;
+  ctx.globalAlpha=1;
   ctx.drawImage(paradoxDashBodyV43,bodyX,bodyY,bodyW,bodyH);
   ctx.restore();
 }
@@ -2010,8 +2041,8 @@ function drawParadox(){
  const cx=P.x+P.w*.5;
  const feetY=P.y+P.h;
 
- // V50: headbutt and Chaos share the same dedicated dash renderer.
- // Headbutt uses mode='dash'; Chaos uses mode='chaos' and drops back to run when beam ends.
+ // V53: Chaos still becomes the headbutt visually.
+ // Use the same body frame, but allow the trail to carry a tiny bit more substance.
  if(!dead && P.dash>0){
    drawParadoxDashV43('dash');
    return;
@@ -2118,7 +2149,7 @@ function drawParadox(){
      }
    }
  }else{
-   // V50 chaos unification: Chaos now uses the same full dash graphic as headbutt, with tighter attachment and a subtle tail fade.
+   // V53 chain-forward chaos-substance: reduces flame further, keeps chains dominant, adds only tiny ember specs, and gives Chaos a little extra density while still using the headbutt render.
    // Grounded running ALWAYS owns the frame choice now.
    // Landing no longer replaces the run sprite; it only adds a brief settle transform.
    if(!running){
