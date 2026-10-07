@@ -1032,211 +1032,169 @@ function drawRingedPlanet(h,t,variant='normal'){
 // V77 final shading pass: Saturns and debris keep the V76 art direction but gain richer light/shadow depth and material feel.
 
 function drawVoidStalker(h,t){
-  // V81: first frame/cell pass for a world piece.
-  // The Void Stalker now uses authored keyed poses instead of mostly continuous math.
+  // V82: concept-faithful frame/cell redraw. Lower hunter silhouette, longer helmet,
+  // arched plated tail, sharper limbs, slower authored cycle.
   const elite=!!h.elite;
-  const s=elite?1.42:1;
+  const s=elite?1.45:1;
 
-  const shellLight=elite?'#fbf6ff':'#eee9f3';
-  const shellMid=elite?'#d9c8ef':'#cec4d8';
-  const shellShade=elite?'#8d69ad':'#76628a';
-  const shellDeep=elite?'#5c4273':'#51435f';
-  const jointDark=elite?'#331f40':'#211824';
-  const jointMid=elite?'#624371':'#4a374f';
-  const glow=elite?'#ff89ff':'#cf58ff';
-  const glowHot=elite?'#fff4ff':'#ffdfff';
-  const accent=elite?'#e9b2ff':'#cda5e7';
+  const shell='#eee9f4';
+  const shell2=elite?'#e2d0f3':'#d5cadf';
+  const edge=elite?'#9a6fbb':'#7a648e';
+  const deep=elite?'#3a2348':'#201824';
+  const joint=elite?'#5a3c69':'#44314b';
+  const glow=elite?'#ff82ff':'#d151ff';
+  const hot=elite?'#fff0ff':'#ffd9ff';
+  const cyan=elite?'#bdf7ff':'#8ddfff';
 
-  // 4 authored cells, played in a 0-1-2-3-2-1 cycle so it feels hand-animated.
+  // Slower, weightier six-step loop using four authored cells.
   const cells=[
-    { bodyY:0.0,  weight:-0.3, tilt:-0.015, breath:1.00, rearY:0.0, frontY:0.0, rearClaw:.16, frontClaw:.22, headX:0.0, headY:0.0, headRot:-0.015, tailLift:0.2, tailTip:0.0, aura:.00, core:.00, visor:5 },
-    { bodyY:-0.9, weight:-1.1, tilt:-0.040, breath:1.02, rearY:-0.6, frontY:0.9, rearClaw:.30, frontClaw:.16, headX:0.7, headY:-0.6, headRot:-0.045, tailLift:1.2, tailTip:1.8, aura:.02, core:.04, visor:4 },
-    { bodyY:0.8,  weight:0.2,  tilt:0.010, breath:.985, rearY:0.8, frontY:-0.4, rearClaw:.12, frontClaw:.34, headX:1.6, headY:1.2, headRot:0.012, tailLift:-0.3, tailTip:3.1, aura:.03, core:.07, visor:5 },
-    { bodyY:-0.2, weight:1.2,  tilt:0.045, breath:1.01, rearY:0.2, frontY:-0.9, rearClaw:.24, frontClaw:.28, headX:0.3, headY:-0.1, headRot:0.032, tailLift:-1.1, tailTip:1.1, aura:.01, core:.02, visor:4 }
+    {y:0,   lean:-.018, headX:0,   headY:0,   headR:-.020, rearY:0,   frontY:0,   rearFlex:.12, frontFlex:.18, tailArc:0,   tailTip:0,  torso:.00, core:.00},
+    {y:-.6, lean:-.038, headX:1.0, headY:-.5, headR:-.052, rearY:-.7, frontY:.7,  rearFlex:.26, frontFlex:.12, tailArc:1.2, tailTip:1.7, torso:.02, core:.03},
+    {y:.7,  lean:.005,  headX:2.2, headY:1.0, headR:.008,  rearY:.7,  frontY:-.5, rearFlex:.10, frontFlex:.30, tailArc:-.4,tailTip:3.0, torso:-.01,core:.06},
+    {y:-.1, lean:.032,  headX:.4,  headY:-.1, headR:.035,  rearY:.2,  frontY:-.8, rearFlex:.20, frontFlex:.24, tailArc:-1.1,tailTip:1.1, torso:.01, core:.02}
   ];
   const seq=[0,1,2,3,2,1];
-  const frameStep=110;
-  const cellIndex=((Math.floor((t + h.x*13)/frameStep)%seq.length)+seq.length)%seq.length;
-  const p=cells[seq[cellIndex]];
+  const frameStep=150; // one frame slower than V81
+  const ci=((Math.floor((t+h.x*11)/frameStep)%seq.length)+seq.length)%seq.length;
+  const p=cells[seq[ci]];
 
-  // Secondary life stays procedural, but only as support.
-  const phase=t*.006+h.x*.021;
-  const microBob=Math.sin(phase*.72)*0.25;
-  const tipPulse=.90+.10*Math.sin(phase*1.15);
-  const blink=(Math.sin(phase*2.1)>.972)?2:p.visor;
+  const phase=t*.0048+h.x*.018;
+  const blink=Math.sin(phase*2.1)>.972?2:5;
+  const tipPulse=.90+.10*Math.sin(phase*1.1);
 
-  function poly(points, fill, stroke=null, lw=1){
-    ctx.fillStyle=fill;
-    ctx.beginPath();
-    ctx.moveTo(points[0][0],points[0][1]);
-    for(let i=1;i<points.length;i++) ctx.lineTo(points[i][0],points[i][1]);
-    ctx.closePath();ctx.fill();
-    if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=lw; ctx.stroke(); }
+  function poly(points,fill,stroke=null,lw=1){
+    ctx.fillStyle=fill; ctx.beginPath(); ctx.moveTo(points[0][0],points[0][1]);
+    for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
+    ctx.closePath(); ctx.fill();
+    if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();}
+  }
+  function line(points,stroke,lw){
+    ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);
+    for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.stroke();
   }
 
   ctx.save();
-  ctx.translate(p.weight*.25, p.bodyY+microBob);
-  ctx.scale(s*p.breath,s/p.breath);
-  ctx.rotate(p.tilt);
+  ctx.translate(0,p.y);
+  ctx.rotate(p.lean);
+  ctx.scale(s,s);
   ctx.scale(-1,1);
 
-  // restrained aura behind the whole silhouette
-  ctx.globalAlpha=(elite ? .16 : .065) + p.aura;
-  ctx.fillStyle=elite?'#ff71ff':'#8139d4';
-  ctx.beginPath();ctx.ellipse(3,-1,25.5,15.2,0,0,Math.PI*2);ctx.fill();
+  // restrained glow bed
+  ctx.globalAlpha=elite?.13:.055;
+  ctx.fillStyle=elite?'#ff68ff':'#7f39cf';
+  ctx.beginPath();ctx.ellipse(1,2,29,13,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  // articulated tail, but snapped through authored cell poses
-  const tailPts=[];
-  for(let i=0;i<7;i++){
-    const f=i/6;
-    const tx=-17-i*3.0;
-    const ty=-1-i*3.25 - p.tailLift*(.25+f*.55) - p.tailTip*(f*f);
-    tailPts.push([tx,ty]);
+  // HIGH-ARCH TAIL from the concept sheet
+  const tail=[];
+  for(let i=0;i<9;i++){
+    const f=i/8;
+    const x=-13-i*3.25;
+    const arch=-4 - Math.sin(f*Math.PI)*18;
+    const y=arch - p.tailArc*(.25+f*.55) - p.tailTip*(f*f*.55);
+    tail.push([x,y]);
   }
-  ctx.strokeStyle=jointDark;ctx.lineWidth=3.2;
-  ctx.beginPath();ctx.moveTo(tailPts[0][0],tailPts[0][1]);
-  for(let i=1;i<tailPts.length;i++)ctx.lineTo(tailPts[i][0],tailPts[i][1]);
-  ctx.stroke();
-  for(let i=0;i<tailPts.length;i++){
-    const [tx,ty]=tailPts[i];
-    const seg=2.7-i*.12;
-    ctx.save();
-    ctx.translate(tx,ty);
-    ctx.rotate(-.25+i*.045 + p.tailTip*.01*(i/6));
-    poly([[-seg,0],[0,-seg*.85],[seg*.95,0],[0,seg*.78]], i%2?shellLight:shellMid, shellShade,.7);
-    ctx.globalAlpha=.42; ctx.fillStyle='#ffffff';
-    ctx.fillRect(-seg*.28,-seg*.5,Math.max(1,seg*.6),1);
-    ctx.globalAlpha=1;
+  line(tail,deep,4.2);
+  for(let i=0;i<tail.length;i++){
+    const [x,y]=tail[i];
+    const rr=3.0-i*.12;
+    ctx.save();ctx.translate(x,y);ctx.rotate(-.55+i*.08);
+    poly([[-rr,0],[-rr*.25,-rr*.82],[rr*.95,-rr*.45],[rr*.9,rr*.42],[-rr*.2,rr*.72]], i%2?shell:shell2, edge,.7);
+    ctx.globalAlpha=.35;ctx.fillStyle='#fff';ctx.fillRect(-rr*.3,-rr*.45,rr*.7,1);ctx.globalAlpha=1;
     ctx.restore();
   }
-  const tip=tailPts[tailPts.length-1];
-  const tipGlow=ctx.createRadialGradient(tip[0],tip[1],0,tip[0],tip[1],5.2*tipPulse);
-  tipGlow.addColorStop(0,glowHot); tipGlow.addColorStop(.35,glow); tipGlow.addColorStop(1,'rgba(120,50,180,0)');
-  ctx.fillStyle=tipGlow; ctx.beginPath(); ctx.arc(tip[0],tip[1],5.2*tipPulse,0,Math.PI*2); ctx.fill();
-  poly([[tip[0],tip[1]-2.8],[tip[0]+2.1,tip[1]],[tip[0],tip[1]+2.8],[tip[0]-2.1,tip[1]]],glow);
+  const [tx,ty]=tail[tail.length-1];
+  const tg=ctx.createRadialGradient(tx,ty,0,tx,ty,6*tipPulse);
+  tg.addColorStop(0,hot);tg.addColorStop(.35,glow);tg.addColorStop(1,'rgba(140,40,190,0)');
+  ctx.fillStyle=tg;ctx.beginPath();ctx.arc(tx,ty,6*tipPulse,0,Math.PI*2);ctx.fill();
+  poly([[tx,ty-3.2],[tx+2.4,ty],[tx,ty+3.2],[tx-2.4,ty]],glow);
 
-  function leg(x1,y1,x2,y2,x3,y3,flip,flex){
-    ctx.strokeStyle=jointDark;ctx.lineWidth=5.2;
-    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.stroke();
-    ctx.strokeStyle=shellLight;ctx.lineWidth=2.7;
-    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2-1*flip,y2-1);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(x2+1*flip,y2);ctx.lineTo(x3,y3);ctx.stroke();
-    ctx.fillStyle=jointMid;ctx.beginPath();ctx.arc(x2,y2,2.2,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle=accent;ctx.lineWidth=.8;ctx.beginPath();ctx.arc(x2,y2,1.35,0,Math.PI*2);ctx.stroke();
+  // long low biomech torso
+  poly([[-12,-4],[-3,-13],[13,-14],[25,-9],[29,-3],[26,5],[15,10],[-1,10],[-14,6],[-18,1]], shell, edge,.8);
+
+  // underside biomech mass, more exposed than V81
+  poly([[-12,0],[-4,-3],[7,-2],[17,2],[13,8],[1,11],[-9,8],[-15,4]],deep);
+  ctx.strokeStyle=joint;ctx.lineWidth=1.4;
+  for(let i=0;i<5;i++){
+    const x=-7+i*5;
+    ctx.beginPath();ctx.moveTo(x,1);ctx.lineTo(x+2,6);ctx.stroke();
+  }
+
+  // shell plating inspired by the concept's overlapping armor
+  poly([[-10,-5],[-5,-11],[3,-13],[4,-7],[-1,-2],[-8,-1]],shell2,edge,.7);
+  poly([[2,-12],[10,-14],[18,-12],[15,-6],[8,-4],[4,-7]],shell,edge,.7);
+  poly([[13,-11],[22,-9],[28,-5],[23,-1],[16,-2],[12,-6]],shell2,edge,.7);
+  poly([[-13,2],[-7,0],[-1,2],[-3,8],[-9,8],[-14,5]],shell2,edge,.7);
+  poly([[7,3],[17,1],[23,4],[18,8],[10,9],[5,6]],shell2,edge,.7);
+
+  // long dorsal blade / shoulder spear from the concept
+  poly([[3,-12],[13,-24],[21,-13],[17,-10],[9,-10]],shell2,edge,.8);
+  poly([[13,-22],[16,-15],[15,-11],[12,-14]],'#ffffff');
+
+  // chest core in dark socket
+  poly([[0,-5],[6,-8],[12,-4],[13,2],[9,7],[2,7],[-2,3],[-3,-1]],deep,edge,.7);
+  const coreR=5.5*(.96+p.core);
+  const cg=ctx.createRadialGradient(5,0,0,5,0,coreR+2);
+  cg.addColorStop(0,hot);cg.addColorStop(.35,glow);cg.addColorStop(1,'#5c1f82');
+  ctx.fillStyle=cg;ctx.beginPath();ctx.arc(5,0,coreR,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=cyan;ctx.lineWidth=.8;ctx.beginPath();ctx.arc(5,0,coreR+1.4,.2,2.5);ctx.stroke();
+
+  function limb(ax,ay,kx,ky,fx,fy,flip,flex,front=false){
+    // long insectile upper limb
+    ctx.strokeStyle=deep;ctx.lineWidth=5.2;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(kx,ky);ctx.lineTo(fx,fy);ctx.stroke();
+    // shell armor caps
+    ctx.strokeStyle=shell;ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(kx-1*flip,ky-1);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(kx+1*flip,ky);ctx.lineTo(fx,fy);ctx.stroke();
+    ctx.fillStyle=joint;ctx.beginPath();ctx.arc(kx,ky,2.0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=edge;ctx.lineWidth=.8;ctx.beginPath();ctx.arc(kx,ky,1.25,0,Math.PI*2);ctx.stroke();
+
     const spread=1+flex*.9;
-    ctx.strokeStyle=shellShade;ctx.lineWidth=1.7;
+    ctx.strokeStyle=deep;ctx.lineWidth=1.7;
     ctx.beginPath();
-    ctx.moveTo(x3,y3);ctx.lineTo(x3+4.8*flip*spread,y3+1.1);
-    ctx.moveTo(x3,y3);ctx.lineTo(x3+3.6*flip*spread,y3-2.4-flex*.8);
+    ctx.moveTo(fx,fy);ctx.lineTo(fx+5.5*flip*spread,fy+1.2);
+    ctx.moveTo(fx,fy);ctx.lineTo(fx+4.2*flip*spread,fy-2.6);
+    ctx.moveTo(fx+.5*flip,fy);ctx.lineTo(fx+3.4*flip*spread,fy+3.0);
     ctx.stroke();
-    ctx.fillStyle=shellLight;
-    poly([[x3+4.8*flip*spread,y3+1.1],[x3+6.0*flip*spread,y3+.6],[x3+5.1*flip*spread,y3+1.9]],shellLight);
+    ctx.fillStyle=glow;
+    if(front)ctx.fillRect(fx+1*flip,fy-1,1,1);
   }
 
-  // rear legs
-  leg(-8,9,-15,16+p.rearY,-13,22+p.rearY,-1,p.rearClaw);
-  leg(-4,8,-8,16-p.rearY*.7,-4,22-p.rearY*.7, 1,p.rearClaw*.8);
+  // rear legs: low and swept back
+  limb(-8,7,-16,14+p.rearY,-15,22+p.rearY,-1,p.rearFlex,false);
+  limb(-3,8,-8,15-p.rearY*.6,-5,22-p.rearY*.6, 1,p.rearFlex*.85,false);
 
-  // body silhouette
-  ctx.fillStyle=shellLight;
-  ctx.beginPath();
-  ctx.moveTo(-12,-1);
-  ctx.quadraticCurveTo(-5,-14,10,-16);
-  ctx.quadraticCurveTo(21,-15,27,-9);
-  ctx.quadraticCurveTo(31,-3,26,6);
-  ctx.quadraticCurveTo(17,13,2,14);
-  ctx.quadraticCurveTo(-11,13,-18,8);
-  ctx.quadraticCurveTo(-19,2,-12,-1);
-  ctx.closePath();ctx.fill();
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(-12,-1);ctx.quadraticCurveTo(-5,-14,10,-16);ctx.quadraticCurveTo(21,-15,27,-9);
-  ctx.quadraticCurveTo(31,-3,26,6);ctx.quadraticCurveTo(17,13,2,14);
-  ctx.quadraticCurveTo(-11,13,-18,8);ctx.quadraticCurveTo(-19,2,-12,-1);ctx.closePath();
-  ctx.clip();
-  const shade=ctx.createLinearGradient(-16,-15,28,15);
-  shade.addColorStop(0,'rgba(255,255,255,.18)');
-  shade.addColorStop(.38,'rgba(255,255,255,.02)');
-  shade.addColorStop(.68,elite?'rgba(120,82,140,.10)':'rgba(93,75,105,.08)');
-  shade.addColorStop(1,elite?'rgba(61,34,82,.38)':'rgba(37,27,45,.36)');
-  ctx.fillStyle=shade; ctx.fillRect(-22,-20,58,42);
+  // front limbs: longer, predatory, reaching forward
+  limb(14,6,23,13+p.frontY,22,22+p.frontY,-1,p.frontFlex,true);
+  limb(20,4,31,10-p.frontY*.5,31,19-p.frontY*.5,-1,p.frontFlex*.95,true);
+
+  // HEAD CELL: long aerodynamic helmet and downward snout
+  ctx.save();ctx.translate(p.headX,p.headY);ctx.rotate(p.headR);
+  poly([[18,-14],[28,-17],[40,-13],[49,-7],[48,-2],[43,3],[33,6],[24,4],[17,-1],[15,-7]],shell,edge,.85);
+  // elongated top carapace blade
+  poly([[20,-14],[27,-23],[37,-17],[44,-12],[34,-12],[27,-10]],shell2,edge,.7);
+  // dark inset visor sweeping along the face
+  poly([[22,-10],[36,-11],[45,-7],[41,-3],[28,-2],[20,-5]],elite?'#260b35':'#13091d');
+  ctx.globalAlpha=.18;ctx.fillStyle='#fff';ctx.fillRect(25,-10,10,1);ctx.globalAlpha=1;
+  ctx.fillStyle=glow;ctx.fillRect(31,-7,9,blink);
+  if(blink>2){ctx.fillStyle='#fff';ctx.fillRect(34,-6,2,2);}
+  // hooked lower cheek / jaw plate
+  poly([[31,-2],[43,-4],[46,-1],[40,4],[33,6],[27,3]],shell2,edge,.7);
+  // tiny vent slash
+  ctx.strokeStyle=deep;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(34,2);ctx.lineTo(40,1);ctx.stroke();
   ctx.restore();
 
-  // plate architecture
-  poly([[-11,-2],[-5,-11],[3,-14],[5,-7],[1,-2],[-6,1]],shellMid,shellShade,.8);
-  poly([[4,-14],[13,-14],[19,-10],[15,-4],[7,-5],[4,-9]],shellLight,shellShade,.75);
-  poly([[-14,4],[-7,1],[0,3],[-1,10],[-8,11],[-14,8]],shellMid,shellShade,.75);
-  poly([[9,4],[19,2],[24,5],[18,10],[10,11],[6,8]],shellMid,shellShade,.75);
-  ctx.globalAlpha=.50;
-  poly([[-10,-3],[-5,-10],[-2,-9],[-6,-4]],'#ffffff');
-  poly([[6,-12],[12,-12],[16,-9],[12,-8]],elite?'#f6e8ff':'#f6f2f8');
-  poly([[10,6],[17,4],[20,5],[16,7]],elite?'#d7b9ec':'#ddd5e4');
-  ctx.globalAlpha=1;
-
-  // abdomen
-  ctx.save();
-  ctx.translate(0,(p.breath-1)*18);
-  ctx.fillStyle=jointDark;
-  ctx.beginPath();
-  ctx.moveTo(-8,1);ctx.quadraticCurveTo(1,8,14,5);
-  ctx.quadraticCurveTo(9,12,-3,11);ctx.quadraticCurveTo(-11,8,-13,4);ctx.closePath();ctx.fill();
-  ctx.strokeStyle=jointMid;ctx.lineWidth=1.3;
-  for(let i=0;i<4;i++){
-    ctx.beginPath(); ctx.moveTo(-5+i*4,4+i*.4); ctx.lineTo(-2+i*4,8-i*.15); ctx.stroke();
-  }
-  ctx.strokeStyle=accent;ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(-4,7);ctx.lineTo(3,8);ctx.lineTo(10,6);ctx.stroke();
-  ctx.restore();
-
-  // chest core with armored socket
-  poly([[-3,-5],[4,-8],[11,-5],[14,1],[11,7],[4,9],[-3,6],[-6,1]],jointDark,shellDeep,.8);
-  const corePulse=.96+p.core;
-  const core=ctx.createRadialGradient(4,0,1,4,0,7.0*corePulse);
-  core.addColorStop(0,glowHot); core.addColorStop(.32,glow); core.addColorStop(1,elite?'#7d2b9a':'#58208a');
-  ctx.fillStyle=core; ctx.beginPath(); ctx.arc(4,0,5.8*corePulse,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle=elite?'#ffc0ff':'#c08fff';ctx.lineWidth=1.1;
-  ctx.beginPath();ctx.arc(4,0,7.2,.30,2.55);ctx.stroke();
-
-  // shoulder/chest armor
-  poly([[11,-12],[21,-11],[28,-6],[27,-1],[23,4],[14,3],[9,-4]],shellLight,shellShade,.8);
-  poly([[13,-10],[21,-9],[24,-6],[18,-5],[13,-6]],shellMid);
-  ctx.globalAlpha=.42; poly([[15,-9],[20,-8],[18,-7],[14,-8]],'#ffffff'); ctx.globalAlpha=1;
-
-  // head assembly - actual authored cell motion lives here
-  ctx.save();
-  ctx.translate(p.headX,p.headY);
-  ctx.rotate(p.headRot);
-  poly([[17,-14],[25,-16],[34,-12],[40,-7],[39,-3],[35,1],[28,4],[21,3],[16,-1],[14,-6]],shellLight,shellShade,.8);
-  poly([[18,-13],[24,-21],[30,-15],[34,-12],[27,-11],[22,-10]],shellMid,shellShade,.7);
-  poly([[27,-2],[36,-5],[38,-3],[34,2],[29,4],[24,2]],shellMid,shellShade,.7);
-  poly([[20,-9],[31,-9],[37,-6],[33,-2],[23,-1],[18,-4]],elite?'#260c35':'#150a20');
-  ctx.globalAlpha=.18; ctx.fillStyle='#ffffff'; ctx.fillRect(23,-8,8,1); ctx.globalAlpha=1;
-  ctx.fillStyle=glow; ctx.fillRect(26,-6,7.5,blink);
-  if(blink>2){ ctx.fillStyle='#ffffff'; ctx.fillRect(29,-5,2,2); }
-  ctx.strokeStyle=jointDark; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(28,1); ctx.lineTo(33,0); ctx.stroke();
-  ctx.restore();
-
-  // dorsal fin
-  poly([[5,-14],[14,-24],[24,-14],[19,-12],[9,-12]],shellMid,shellShade,.8);
-  ctx.strokeStyle='#ffffff';ctx.globalAlpha=.26;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(13,-21);ctx.lineTo(14,-15);ctx.stroke();ctx.globalAlpha=1;
-
-  // front legs
-  leg(12,8,19,15+p.frontY,17,22+p.frontY,-1,p.frontClaw);
-  leg(18,7,27,14-p.frontY*.8,27,21-p.frontY*.8,-1,p.frontClaw*.95);
-
-  // restrained micro details
-  ctx.fillStyle=elite?'#ffc7ff':'#e7a5f5';
-  ctx.fillRect(-2,4,2,2);ctx.fillRect(10,1,2,2);ctx.fillRect(7,-10,1,1);ctx.fillRect(16,-9,1,1);
-  ctx.fillStyle=elite?'#b8f4ff':'#99dfff';
-  ctx.fillRect(-10,-2,1,1);ctx.fillRect(20,5,1,1);
-  ctx.globalAlpha=.22; ctx.fillStyle='#ffffff';
-  ctx.fillRect(-4,-12,4,1);ctx.fillRect(14,-11,4,1);ctx.fillRect(21,-5,3,1);
-  ctx.globalAlpha=1;
+  // concept-like shell accents and spec hits
+  ctx.globalAlpha=.42;ctx.fillStyle='#fff';
+  ctx.fillRect(-5,-10,5,1);ctx.fillRect(7,-12,5,1);ctx.fillRect(17,-8,4,1);ctx.globalAlpha=1;
+  ctx.fillStyle=glow;ctx.fillRect(-2,4,2,2);ctx.fillRect(10,1,2,2);
+  ctx.fillStyle=cyan;ctx.fillRect(-10,-2,1,1);ctx.fillRect(21,5,1,1);
 
   if(elite){
-    ctx.globalAlpha=.24+.05*p.core;
-    ctx.strokeStyle='#ffb2ff';ctx.lineWidth=1.35;
-    ctx.beginPath();ctx.arc(4,-1,28,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=.20;
+    ctx.strokeStyle='#ffb4ff';ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.arc(5,-1,31,0,Math.PI*2);ctx.stroke();
     ctx.globalAlpha=1;
   }
 
