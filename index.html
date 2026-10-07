@@ -745,7 +745,8 @@ function drawGalaxyThorn(h,t){
 
 
 function drawRingedPlanet(h,t,variant='normal'){
-  // V64: more premium finish—extra ring banding, crater texture, and a little atmosphere glow.
+  // V68: Saturn fidelity pass. Push closer to the concept art with more ring authority,
+  // stronger cracked-shell drama, and richer celestial texture while keeping gameplay readability.
   const phase=t*.005+h.x*.012;
   const pulse=.5+.5*Math.sin(phase*1.8);
   const bob=Math.sin(phase)*1.0;
@@ -753,121 +754,160 @@ function drawRingedPlanet(h,t,variant='normal'){
   const hot=heavy;
   ctx.save();
   ctx.translate(0,bob*.35);
-  if(heavy) ctx.scale(1.10,1.10);
+  if(heavy) ctx.scale(1.11,1.11);
 
+  // anchored ground shadow
   ctx.globalAlpha=.24;
   ctx.fillStyle='#090716';
-  ctx.beginPath();ctx.ellipse(0,12,27,6,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,12,28,6,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  const ringMain=hot?'#ffd45e':'#ff9d8a';
-  const ringHi=hot?'#fff0a0':'#ffd6ef';
-  const crackMain=hot?'#ffd24d':'#ff8c78';
-  const crackCore=hot?'#fff1a0':'#ffc4e8';
-  const crustA=hot?'#7a4339':'#5c2d9d';
-  const crustB=hot?'#3d232a':'#301754';
+  const ringMain=hot?'#ffd45e':'#ffb39c';
+  const ringHi=hot?'#fff0a0':'#ffe4f2';
+  const ringLow=hot?'#ffb53d':'#f78ed2';
+  const crackMain=hot?'#ffd24d':'#ff9c80';
+  const crackCore=hot?'#fff1a0':'#ffd3f0';
+  const crustA=hot?'#835040':'#6432ad';
+  const crustB=hot?'#4a2830':'#351a66';
+  const crustC=hot?'#b8734e':'#8b57df';
 
-  // thin atmosphere glow
-  ctx.globalAlpha=.18+.08*pulse;
-  ctx.fillStyle=hot?'#ffbc6b':'#b982ff';
-  ctx.beginPath();ctx.arc(0,0,24.5,0,Math.PI*2);ctx.fill();
+  // atmosphere / aura
+  ctx.globalAlpha=.15+.10*pulse;
+  ctx.fillStyle=hot?'#ffbf6c':'#b983ff';
+  ctx.beginPath();ctx.arc(0,0,25.5,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  // back half of the ring
+  // back ring half with extra banding
   ctx.save();
-  ctx.rotate(-.14);
-  ctx.strokeStyle=ringMain; ctx.lineWidth=4;
-  ctx.beginPath();ctx.ellipse(0,0,31,10,0,Math.PI,Math.PI*2);ctx.stroke();
-  ctx.strokeStyle=ringHi; ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.ellipse(0,0,31,10,0,Math.PI,Math.PI*2);ctx.stroke();
-  ctx.globalAlpha=.35;
-  ctx.strokeStyle=hot?'#ffb938':'#ffb9d7'; ctx.lineWidth=1;
-  ctx.beginPath();ctx.ellipse(0,0,26,7,0,Math.PI,Math.PI*2);ctx.stroke();
-  ctx.beginPath();ctx.ellipse(0,0,20,4.6,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.rotate(-.16);
+  ctx.strokeStyle=ringMain; ctx.lineWidth=4.2;
+  ctx.beginPath();ctx.ellipse(0,0,32,10.8,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle=ringHi; ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.ellipse(0,0,32,10.8,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=.40;
+  ctx.strokeStyle=ringLow; ctx.lineWidth=1;
+  ctx.beginPath();ctx.ellipse(0,0,27,7.8,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,21,5.1,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=.16;
+  ctx.lineWidth=6.3;
+  ctx.strokeStyle='#ffffff';
+  ctx.beginPath();ctx.ellipse(0,-.2,30.5,9.8,0,Math.PI,Math.PI*2);ctx.stroke();
   ctx.globalAlpha=1;
   ctx.restore();
 
+  // sphere base with stronger planetary volume
   const g=ctx.createRadialGradient(-7,-8,3,0,0,25);
-  g.addColorStop(0,hot?'#be8250':'#b472ff');
-  g.addColorStop(.42,hot?'#8a4d39':'#7a42d0');
-  g.addColorStop(.78,hot?'#5b2f31':'#49257f');
-  g.addColorStop(1,hot?'#2c1825':'#21143d');
+  g.addColorStop(0,hot?'#d49b60':'#c18bff');
+  g.addColorStop(.28,hot?'#9b5a42':'#8a49de');
+  g.addColorStop(.64,hot?'#62363a':'#55298f');
+  g.addColorStop(1,hot?'#261722':'#1e1037');
   ctx.fillStyle=g;
   ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();
 
-  ctx.globalAlpha=.30;
-  ctx.strokeStyle=hot?'#ffd58d':'#dcaeff'; ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(-2,-2,19.5,3.9,5.5);ctx.stroke();
+  // subtle highlight rim and lower falloff
+  ctx.globalAlpha=.34;
+  ctx.strokeStyle=hot?'#ffe1a8':'#e4bdff'; ctx.lineWidth=2.1;
+  ctx.beginPath();ctx.arc(-2,-2,19.6,3.9,5.55);ctx.stroke();
+  ctx.globalAlpha=.14;
+  ctx.strokeStyle='#000000'; ctx.lineWidth=2.4;
+  ctx.beginPath();ctx.arc(2,3,19.5,.7,2.3);ctx.stroke();
   ctx.globalAlpha=1;
 
-  // surface texture
+  // layered surface continents / crust plates
   ctx.fillStyle=crustA;
   ctx.beginPath();ctx.arc(-9,-7,5,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.arc(8,7,4,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(3,-10,6,3,0,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(-10,2,4,2.2,.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(3,-10,6.4,3.2,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(-10,2,4.4,2.4,.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(11,1,4.8,2.1,.35,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=crustB;
-  ctx.beginPath();ctx.arc(10,-8,3.5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(-7,9,3,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(-2,5,7,3.2,-.3,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(9,0,4,1.8,.45,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(10,-8,3.6,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(-7,9,3.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(-2,5,7.4,3.3,-.3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(7,-1,3.2,1.5,.1,0,Math.PI*2);ctx.fill();
 
-  // crater rims + tiny pockmarks
-  ctx.strokeStyle=hot?'#8d5a43':'#7e57c3'; ctx.lineWidth=1.2;
+  // little elevated plate highlights
+  ctx.globalAlpha=.32;
+  ctx.fillStyle=crustC;
+  ctx.beginPath();ctx.ellipse(-9,-8,2.5,1.4,-.2,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(2,-10,3,1.1,.12,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(7,7,2.1,1.1,.22,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+
+  // crater rims and tiny pockmarks
+  ctx.strokeStyle=hot?'#93624a':'#8660c8'; ctx.lineWidth=1.15;
   ctx.beginPath();ctx.arc(-9,-7,3.2,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.arc(8,7,2.5,0,Math.PI*2);ctx.stroke();
-  ctx.fillStyle=hot?'#a36a50':'#9166d8';
-  ctx.fillRect(-2,-1,1,1);ctx.fillRect(4,9,1,1);ctx.fillRect(-13,3,1,1);
+  ctx.beginPath();ctx.arc(10,-8,1.8,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=hot?'#b7805f':'#a478eb';
+  ctx.fillRect(-2,-1,1,1);ctx.fillRect(4,9,1,1);ctx.fillRect(-13,3,1,1);ctx.fillRect(10,3,1,1);
 
-  // glowing crack network
-  ctx.strokeStyle=crackMain; ctx.lineWidth=2.2;
+  // glowing crack network - more dramatic and premium
+  ctx.strokeStyle=crackMain; ctx.lineWidth=2.4;
   ctx.beginPath();
-  ctx.moveTo(-4,-20);ctx.lineTo(-2,-11);ctx.lineTo(3,-5);ctx.lineTo(1,2);ctx.lineTo(7,8);ctx.lineTo(5,18);
-  ctx.moveTo(3,-5);ctx.lineTo(11,-7);ctx.lineTo(16,-3);
+  ctx.moveTo(-5,-19);ctx.lineTo(-3,-12);ctx.lineTo(2,-6);ctx.lineTo(1,2);ctx.lineTo(7,8);ctx.lineTo(5,18);
+  ctx.moveTo(2,-6);ctx.lineTo(10,-7);ctx.lineTo(15,-3);
   ctx.moveTo(1,2);ctx.lineTo(-7,5);ctx.lineTo(-13,12);
-  ctx.moveTo(-2,-11);ctx.lineTo(-10,-13);ctx.lineTo(-15,-9);
+  ctx.moveTo(-3,-12);ctx.lineTo(-11,-13);ctx.lineTo(-15,-9);
+  ctx.moveTo(5,18);ctx.lineTo(10,12);ctx.lineTo(15,10);
   ctx.stroke();
-  ctx.globalAlpha=.33+.10*pulse;
-  ctx.strokeStyle=crackCore; ctx.lineWidth=1;
+  ctx.globalAlpha=.40+.12*pulse;
+  ctx.strokeStyle=crackCore; ctx.lineWidth=1.1;
   ctx.stroke();
   ctx.globalAlpha=1;
 
+  // crack hotspots
   ctx.fillStyle=crackCore;
-  ctx.fillRect(1,-6,2,2);ctx.fillRect(-3,-12,2,2);ctx.fillRect(6,7,2,2);ctx.fillRect(-10,4,1,1);
+  ctx.fillRect(1,-6,2,2);ctx.fillRect(-3,-12,2,2);ctx.fillRect(6,7,2,2);ctx.fillRect(-10,4,1,1);ctx.fillRect(9,11,1,1);
 
+  // brighter molten instability on the hot variant
+  if(hot){
+    ctx.globalAlpha=.18+.12*pulse;
+    ctx.fillStyle='#ffb33f';
+    ctx.beginPath();ctx.arc(0,0,23.3,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
+  // front ring half over the sphere
   ctx.save();
-  ctx.rotate(-.14);
-  ctx.strokeStyle=ringMain; ctx.lineWidth=4;
-  ctx.beginPath();ctx.ellipse(0,0,31,10,0,0,Math.PI);ctx.stroke();
-  ctx.strokeStyle=ringHi; ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.ellipse(0,0,31,10,0,0,Math.PI);ctx.stroke();
-  ctx.globalAlpha=.35;
-  ctx.strokeStyle=hot?'#ffb938':'#ffb9d7'; ctx.lineWidth=1;
-  ctx.beginPath();ctx.ellipse(0,0,26,7,0,0,Math.PI);ctx.stroke();
-  ctx.beginPath();ctx.ellipse(0,0,20,4.6,0,0,Math.PI);ctx.stroke();
+  ctx.rotate(-.16);
+  ctx.strokeStyle=ringMain; ctx.lineWidth=4.2;
+  ctx.beginPath();ctx.ellipse(0,0,32,10.8,0,0,Math.PI);ctx.stroke();
+  ctx.strokeStyle=ringHi; ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.ellipse(0,0,32,10.8,0,0,Math.PI);ctx.stroke();
+  ctx.globalAlpha=.42;
+  ctx.strokeStyle=ringLow; ctx.lineWidth=1;
+  ctx.beginPath();ctx.ellipse(0,0,27,7.8,0,0,Math.PI);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,21,5.1,0,0,Math.PI);ctx.stroke();
+
+  // a couple chunky debris/ring chunks riding the front ring for concept-art flavor
   ctx.globalAlpha=1;
+  ctx.fillStyle=hot?'#e6bf63':'#d8a8ff';
+  ctx.fillRect(-22,2,4,2);ctx.fillRect(14,-3,3,2);ctx.fillRect(20,1,2,2);
   ctx.restore();
 
+  // heavy variant: more unstable fracture energy
   if(heavy){
     ctx.strokeStyle='#ffe15f'; ctx.lineWidth=2;
     ctx.beginPath();
     ctx.moveTo(-18,-2);ctx.lineTo(-9,0);ctx.lineTo(-5,7);ctx.lineTo(-1,13);
     ctx.moveTo(13,-15);ctx.lineTo(9,-9);ctx.lineTo(12,-2);ctx.lineTo(18,2);
     ctx.stroke();
-    ctx.globalAlpha=.14+.10*pulse;
+    ctx.globalAlpha=.16+.12*pulse;
     ctx.fillStyle='#ffb13b';
     ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;
   }
 
-  ctx.globalAlpha=.55+.25*pulse;
+  // spark/debris glints
+  ctx.globalAlpha=.56+.26*pulse;
   ctx.fillStyle=hot?'#ffd95c':'#ff9acb';
-  ctx.fillRect(-25,-7,2,2);ctx.fillRect(24,5,2,2);ctx.fillRect(18,-15,1,1);ctx.fillRect(-18,12,1,1);
+  ctx.fillRect(-25,-7,2,2);ctx.fillRect(24,5,2,2);ctx.fillRect(18,-15,1,1);ctx.fillRect(-18,12,1,1);ctx.fillRect(-4,-18,1,1);
   ctx.globalAlpha=1;
   ctx.restore();
 }
 
-// V65 art fidelity pass 1: Cosmic Core rebuilt around the selected concept art silhouette; all other artifacts remain V64.
+// V68 Saturn fidelity pass: Cosmic Core remains locked, Ringed Planets pushed closer to the concept art with richer ring/surface/crack treatment.
 
 function drawVoidStalker(h,t){
   // V64: polished biomech pass—extra shell plating, visor depth, and cleaner silhouette texture.
