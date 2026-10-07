@@ -537,7 +537,7 @@ function update(dt){
      h.elite ? 42 :
      (h.type==='table'||h.type==='barrier') ? 26 : 20;
    burst(hh.x+hh.w/2,hh.y+hh.h/2,burstCount,burstColor);
-   flash.style.opacity=h.elite?.72:(h.type==='crystal'?.52:.34);
+   flash.style.opacity = h.elite ? .72 : (h.type==='crystal' ? .52 : .34);
    setTimeout(()=>flash.style.opacity=0,45);
    spawnDebris(h.x+h.w/2,h.y+h.h/2,h.type,!!h.elite);
  }
@@ -622,7 +622,7 @@ function updateDeath(dt){
 
 
 function drawGalaxyThorn(h,t){
-  // V63: Thorn Maw gets a more textured fleshy/cosmic treatment and a simple 4-beat motion cycle.
+  // V64: subtle extra finish—slime glints, richer base, and slightly more cohesive wet texture.
   const phase=t*.006+h.x*.018;
   const frame=Math.floor((t/110)%4);
   const cycle=[0,1,2,1][frame];
@@ -631,7 +631,6 @@ function drawGalaxyThorn(h,t){
   ctx.save();
   ctx.translate(0,3);
 
-  // rooted alien base with wet core glow
   const baseGlow=ctx.createRadialGradient(0,5,2,0,5,30);
   baseGlow.addColorStop(0,'rgba(238,108,255,.34)');
   baseGlow.addColorStop(.6,'rgba(118,34,150,.18)');
@@ -645,6 +644,8 @@ function drawGalaxyThorn(h,t){
   ctx.fillRect(-23,4,10,5);ctx.fillRect(3,3,12,5);
   ctx.fillStyle='#b347d2';
   ctx.fillRect(-9,5,4,2);ctx.fillRect(8,6,4,2);
+  ctx.fillStyle='rgba(255,190,255,.16)';
+  ctx.fillRect(-4,6,8,1);
 
   for(let i=-2;i<=2;i++){
     const ox=i*11;
@@ -653,35 +654,31 @@ function drawGalaxyThorn(h,t){
     const midX=ox+local*.32;
     const midY=-ht*.48;
 
-    // thick flexible tentacle body
     ctx.strokeStyle='#4a135f';ctx.lineWidth=9;
     ctx.beginPath();
     ctx.moveTo(ox,8);
     ctx.quadraticCurveTo(midX,midY,ox+local,-ht);
     ctx.stroke();
 
-    // secondary darker contour for depth
     ctx.strokeStyle='#2a0d35';ctx.lineWidth=4;
     ctx.beginPath();
     ctx.moveTo(ox-1,8);
     ctx.quadraticCurveTo(midX-2,midY+2,ox+local-2,-ht+1);
     ctx.stroke();
 
-    // bright inner streak keeps it readable at speed
     ctx.strokeStyle='#d86bf1';ctx.lineWidth=2;
     ctx.beginPath();
     ctx.moveTo(ox+2,5);
     ctx.quadraticCurveTo(ox+local*.42,-ht*.46,ox+local+1,-ht+2);
     ctx.stroke();
 
-    // little texture nodes / holes on the flesh
     ctx.fillStyle='#7f2aa5';
     ctx.beginPath();ctx.arc(ox+local*.22,-ht*.25,2.1,0,Math.PI*2);ctx.fill();
     ctx.beginPath();ctx.arc(ox+local*.55,-ht*.55,1.5,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#ee8cff';
     ctx.fillRect(Math.round(ox+local*.2)-1,Math.round(-ht*.25)-1,1,1);
+    ctx.fillRect(Math.round(ox+local*.48)-1,Math.round(-ht*.52)-1,1,1);
 
-    // thorn tip
     ctx.fillStyle='#ffd0ff';
     ctx.beginPath();
     ctx.moveTo(ox+local-3,-ht+2);
@@ -690,7 +687,6 @@ function drawGalaxyThorn(h,t){
     ctx.closePath();
     ctx.fill();
 
-    // wet drip at the tip on a couple arms
     if(i===0 || Math.abs(i)===2){
       ctx.strokeStyle='#e59bff';ctx.lineWidth=1.5;
       ctx.beginPath();
@@ -701,7 +697,6 @@ function drawGalaxyThorn(h,t){
       ctx.beginPath();ctx.arc(ox+local+1,-ht+7+(cycle===1?1:0),1.7,0,Math.PI*2);ctx.fill();
     }
 
-    // side barb
     if(i!==0){
       ctx.fillStyle='#9e3ec4';
       ctx.beginPath();
@@ -713,7 +708,6 @@ function drawGalaxyThorn(h,t){
     }
   }
 
-  // core nodules in the maw base
   ctx.fillStyle='#8e31b6';
   ctx.beginPath();ctx.arc(-6,4,3.5,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.arc(7,3,4,0,Math.PI*2);ctx.fill();
@@ -724,7 +718,6 @@ function drawGalaxyThorn(h,t){
   ctx.fillStyle=mawCore;
   ctx.beginPath();ctx.arc(0,2,6.5,0,Math.PI*2);ctx.fill();
 
-  // tiny cosmic sparkle so they still belong in this world
   ctx.globalAlpha=.22+.14*Math.sin(phase*1.4);
   ctx.fillStyle='#d980ff';
   ctx.fillRect(-15,-8,1,1);ctx.fillRect(14,-5,1,1);ctx.fillRect(2,-18,1,1);
@@ -734,7 +727,7 @@ function drawGalaxyThorn(h,t){
 
 
 function drawRingedPlanet(h,t,variant='normal'){
-  // V63: richer texture for both Mars variants while keeping them readable at speed.
+  // V64: more premium finish—extra ring banding, crater texture, and a little atmosphere glow.
   const phase=t*.005+h.x*.012;
   const pulse=.5+.5*Math.sin(phase*1.8);
   const bob=Math.sin(phase)*1.0;
@@ -744,7 +737,6 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.translate(0,bob*.35);
   if(heavy) ctx.scale(1.10,1.10);
 
-  // grounded shadow so it still reads as an obstacle on the platform
   ctx.globalAlpha=.24;
   ctx.fillStyle='#090716';
   ctx.beginPath();ctx.ellipse(0,12,27,6,0,0,Math.PI*2);ctx.fill();
@@ -757,24 +749,26 @@ function drawRingedPlanet(h,t,variant='normal'){
   const crustA=hot?'#7a4339':'#5c2d9d';
   const crustB=hot?'#3d232a':'#301754';
 
+  // thin atmosphere glow
+  ctx.globalAlpha=.18+.08*pulse;
+  ctx.fillStyle=hot?'#ffbc6b':'#b982ff';
+  ctx.beginPath();ctx.arc(0,0,24.5,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+
   // back half of the ring
   ctx.save();
   ctx.rotate(-.14);
-  ctx.strokeStyle=ringMain;
-  ctx.lineWidth=4;
+  ctx.strokeStyle=ringMain; ctx.lineWidth=4;
   ctx.beginPath();ctx.ellipse(0,0,31,10,0,Math.PI,Math.PI*2);ctx.stroke();
-  ctx.strokeStyle=ringHi;
-  ctx.lineWidth=1.5;
+  ctx.strokeStyle=ringHi; ctx.lineWidth=1.5;
   ctx.beginPath();ctx.ellipse(0,0,31,10,0,Math.PI,Math.PI*2);ctx.stroke();
-  // little banding detail on ring
   ctx.globalAlpha=.35;
-  ctx.strokeStyle=hot?'#ffb938':'#ffb9d7';
-  ctx.lineWidth=1;
+  ctx.strokeStyle=hot?'#ffb938':'#ffb9d7'; ctx.lineWidth=1;
   ctx.beginPath();ctx.ellipse(0,0,26,7,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,20,4.6,0,Math.PI,Math.PI*2);ctx.stroke();
   ctx.globalAlpha=1;
   ctx.restore();
 
-  // planet sphere base
   const g=ctx.createRadialGradient(-7,-8,3,0,0,25);
   g.addColorStop(0,hot?'#be8250':'#b472ff');
   g.addColorStop(.42,hot?'#8a4d39':'#7a42d0');
@@ -783,60 +777,61 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.fillStyle=g;
   ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();
 
-  // rim light for volume
-  ctx.globalAlpha=.28;
-  ctx.strokeStyle=hot?'#ffd58d':'#dcaeff';ctx.lineWidth=2;
+  ctx.globalAlpha=.30;
+  ctx.strokeStyle=hot?'#ffd58d':'#dcaeff'; ctx.lineWidth=2;
   ctx.beginPath();ctx.arc(-2,-2,19.5,3.9,5.5);ctx.stroke();
   ctx.globalAlpha=1;
 
-  // layered surface plates / craters / bands
+  // surface texture
   ctx.fillStyle=crustA;
   ctx.beginPath();ctx.arc(-9,-7,5,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.arc(8,7,4,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.ellipse(3,-10,6,3,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(-10,2,4,2.2,.2,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=crustB;
   ctx.beginPath();ctx.arc(10,-8,3.5,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.arc(-7,9,3,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.ellipse(-2,5,7,3.2,-.3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(9,0,4,1.8,.45,0,Math.PI*2);ctx.fill();
 
-  // crater rims for readability
-  ctx.strokeStyle=hot?'#8d5a43':'#7e57c3';ctx.lineWidth=1.2;
+  // crater rims + tiny pockmarks
+  ctx.strokeStyle=hot?'#8d5a43':'#7e57c3'; ctx.lineWidth=1.2;
   ctx.beginPath();ctx.arc(-9,-7,3.2,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.arc(8,7,2.5,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=hot?'#a36a50':'#9166d8';
+  ctx.fillRect(-2,-1,1,1);ctx.fillRect(4,9,1,1);ctx.fillRect(-13,3,1,1);
 
   // glowing crack network
-  ctx.strokeStyle=crackMain;
-  ctx.lineWidth=2.2;
+  ctx.strokeStyle=crackMain; ctx.lineWidth=2.2;
   ctx.beginPath();
   ctx.moveTo(-4,-20);ctx.lineTo(-2,-11);ctx.lineTo(3,-5);ctx.lineTo(1,2);ctx.lineTo(7,8);ctx.lineTo(5,18);
   ctx.moveTo(3,-5);ctx.lineTo(11,-7);ctx.lineTo(16,-3);
   ctx.moveTo(1,2);ctx.lineTo(-7,5);ctx.lineTo(-13,12);
   ctx.moveTo(-2,-11);ctx.lineTo(-10,-13);ctx.lineTo(-15,-9);
   ctx.stroke();
+  ctx.globalAlpha=.33+.10*pulse;
+  ctx.strokeStyle=crackCore; ctx.lineWidth=1;
+  ctx.stroke();
+  ctx.globalAlpha=1;
 
-  // tiny bright crack cores
   ctx.fillStyle=crackCore;
   ctx.fillRect(1,-6,2,2);ctx.fillRect(-3,-12,2,2);ctx.fillRect(6,7,2,2);ctx.fillRect(-10,4,1,1);
 
-  // front half of the ring, drawn over the planet
   ctx.save();
   ctx.rotate(-.14);
-  ctx.strokeStyle=ringMain;
-  ctx.lineWidth=4;
+  ctx.strokeStyle=ringMain; ctx.lineWidth=4;
   ctx.beginPath();ctx.ellipse(0,0,31,10,0,0,Math.PI);ctx.stroke();
-  ctx.strokeStyle=ringHi;
-  ctx.lineWidth=1.5;
+  ctx.strokeStyle=ringHi; ctx.lineWidth=1.5;
   ctx.beginPath();ctx.ellipse(0,0,31,10,0,0,Math.PI);ctx.stroke();
   ctx.globalAlpha=.35;
-  ctx.strokeStyle=hot?'#ffb938':'#ffb9d7';ctx.lineWidth=1;
+  ctx.strokeStyle=hot?'#ffb938':'#ffb9d7'; ctx.lineWidth=1;
   ctx.beginPath();ctx.ellipse(0,0,26,7,0,0,Math.PI);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,20,4.6,0,0,Math.PI);ctx.stroke();
   ctx.globalAlpha=1;
   ctx.restore();
 
-  // Heavy breakaway variant: same Ringed Planet family, just more damaged/unstable.
   if(heavy){
-    ctx.strokeStyle='#ffe15f';
-    ctx.lineWidth=2;
+    ctx.strokeStyle='#ffe15f'; ctx.lineWidth=2;
     ctx.beginPath();
     ctx.moveTo(-18,-2);ctx.lineTo(-9,0);ctx.lineTo(-5,7);ctx.lineTo(-1,13);
     ctx.moveTo(13,-15);ctx.lineTo(9,-9);ctx.lineTo(12,-2);ctx.lineTo(18,2);
@@ -847,19 +842,17 @@ function drawRingedPlanet(h,t,variant='normal'){
     ctx.globalAlpha=1;
   }
 
-  // spark pixels hinting that it is unstable / smashable
   ctx.globalAlpha=.55+.25*pulse;
   ctx.fillStyle=hot?'#ffd95c':'#ff9acb';
   ctx.fillRect(-25,-7,2,2);ctx.fillRect(24,5,2,2);ctx.fillRect(18,-15,1,1);ctx.fillRect(-18,12,1,1);
   ctx.globalAlpha=1;
-
   ctx.restore();
 }
 
-// V63 texture pass: richer texture across Mars variants, Void Stalker, Cosmic Core, and Thorn Maw motion/detail.
+// V64 luxury texture pass: premium art polish across Mars variants, Void Stalker, Cosmic Core, and Thorn Maw, with the biggest boost going to the Cosmic Core.
 
 function drawVoidStalker(h,t){
-  // V63: more biomech surface texture and segmentation, still clear at speed.
+  // V64: polished biomech pass—extra shell plating, visor depth, and cleaner silhouette texture.
   const elite=!!h.elite;
   const s=elite?1.42:1;
   const phase=t*.008+h.x*.022;
@@ -872,14 +865,14 @@ function drawVoidStalker(h,t){
   ctx.save();
   ctx.translate(0,bob);
   ctx.scale(s*breathe,s/breathe);
-  ctx.scale(-1,1); // face incoming Paradox
+  ctx.scale(-1,1);
 
   ctx.globalAlpha=elite ? .22 : .10;
   ctx.fillStyle=elite?'#ff71ff':'#8139d4';
   ctx.beginPath();ctx.ellipse(1,0,24,16,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  // segmented tail with bead at the end
+  // tail
   ctx.strokeStyle=elite?'#d5c6ef':'#b6a3d8';ctx.lineWidth=5;
   ctx.beginPath();
   ctx.moveTo(-17,0);
@@ -892,16 +885,16 @@ function drawVoidStalker(h,t){
   ctx.quadraticCurveTo(-28,-5-tailWhip,-33,-13-tailWhip*.3);
   ctx.quadraticCurveTo(-36,-19-tailWhip*.15,-31,-22);
   ctx.stroke();
-  for(let i=0;i<4;i++){
-    const tx=-19-i*4.3;
-    const ty=-2-i*4.6-tailWhip*(.10+i*.03);
+  for(let i=0;i<5;i++){
+    const tx=-19-i*3.9;
+    const ty=-2-i*4.2-tailWhip*(.10+i*.03);
     ctx.fillStyle=i%2? (elite?'#f0e6ff':'#d8cce9') : (elite?'#a062d3':'#854eb6');
-    ctx.beginPath();ctx.arc(tx,ty,2.2-i*.18,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(tx,ty,2.25-i*.16,0,Math.PI*2);ctx.fill();
   }
   ctx.fillStyle=elite?'#ffb1ff':'#ff79ff';
   ctx.beginPath();ctx.arc(-32,-22,3.2,0,Math.PI*2);ctx.fill();
 
-  // rear legs
+  // legs
   ctx.strokeStyle=elite?'#f1c1ff':'#d4bdf7';ctx.lineWidth=4;
   ctx.beginPath();
   ctx.moveTo(-8,9);ctx.lineTo(-15,16+step*.2);ctx.lineTo(-13,22+step*.2);
@@ -913,7 +906,7 @@ function drawVoidStalker(h,t){
   ctx.moveTo(-4,22-step*.2);ctx.lineTo(0,24-step*.2);
   ctx.stroke();
 
-  // main body shell, long and sleek
+  // main body shell
   ctx.fillStyle=elite?'#ede3ff':'#dfd7eb';
   ctx.beginPath();
   ctx.moveTo(-9,-2);ctx.quadraticCurveTo(-3,-14,13,-14);
@@ -924,15 +917,17 @@ function drawVoidStalker(h,t){
   ctx.quadraticCurveTo(-17,2,-9,-2);
   ctx.closePath();ctx.fill();
 
-  // shell texture panel lines
+  // layered shell panels
   ctx.strokeStyle=elite?'#b89add':'#9277b8';ctx.lineWidth=1.25;
   ctx.beginPath();
   ctx.moveTo(-2,-12);ctx.lineTo(5,-6);ctx.lineTo(10,-1);
   ctx.moveTo(3,-11);ctx.lineTo(12,-10);ctx.lineTo(20,-7);
   ctx.moveTo(1,12);ctx.lineTo(7,6);ctx.lineTo(16,4);
+  ctx.moveTo(-7,-1);ctx.lineTo(0,1);ctx.lineTo(8,1);
   ctx.stroke();
+  ctx.fillStyle=elite?'rgba(255,255,255,.18)':'rgba(255,255,255,.12)';
+  ctx.beginPath();ctx.ellipse(7,-8,7,2.3,-.22,0,Math.PI*2);ctx.fill();
 
-  // underside / biomech joint area
   ctx.fillStyle=elite?'#584071':'#31263d';
   ctx.beginPath();
   ctx.moveTo(-7,1);ctx.quadraticCurveTo(1,8,14,5);
@@ -940,7 +935,6 @@ function drawVoidStalker(h,t){
   ctx.fillStyle=elite?'#7a5a95':'#5a436d';
   ctx.fillRect(-4,4,3,2);ctx.fillRect(2,6,3,2);ctx.fillRect(10,4,3,2);
 
-  // shoulder / core node
   const core=ctx.createRadialGradient(5,0,1,5,0,7);
   core.addColorStop(0, elite?'#fff6ff':'#ffe9ff');
   core.addColorStop(.35, elite?'#ff97ff':'#f573ff');
@@ -950,39 +944,40 @@ function drawVoidStalker(h,t){
   ctx.strokeStyle=elite?'#ffc0ff':'#c08fff';ctx.lineWidth=1.5;
   ctx.beginPath();ctx.arc(5,0,8.2,.4,2.4);ctx.stroke();
 
-  // front chest plating
+  // chest plating
   ctx.fillStyle=elite?'#f0e7ff':'#dfd8ec';
   ctx.beginPath();
   ctx.moveTo(13,-12);ctx.lineTo(24,-10);ctx.lineTo(28,-3);ctx.lineTo(22,4);ctx.lineTo(13,3);ctx.lineTo(10,-4);ctx.closePath();ctx.fill();
   ctx.strokeStyle=elite?'#c4a4e7':'#a485c6';ctx.lineWidth=1.2;
   ctx.beginPath();ctx.moveTo(14,-8);ctx.lineTo(23,-6);ctx.lineTo(21,0);ctx.stroke();
+  ctx.fillStyle=elite?'rgba(255,255,255,.18)':'rgba(255,255,255,.10)';
+  ctx.fillRect(18,-8,4,1);
 
-  // head crest / sleek biomech helmet
+  // head / visor
   ctx.fillStyle=elite?'#f4ecff':'#ebe4f5';
   ctx.beginPath();
   ctx.moveTo(20,-14);ctx.lineTo(31,-11);ctx.lineTo(37,-5);ctx.lineTo(34,1);ctx.lineTo(25,4);ctx.lineTo(18,2);ctx.lineTo(15,-4);ctx.lineTo(17,-10);ctx.closePath();ctx.fill();
   ctx.fillStyle=elite?'#d7cbef':'#bcaedc';
   ctx.beginPath();ctx.moveTo(18,-11);ctx.lineTo(24,-18);ctx.lineTo(31,-12);ctx.closePath();ctx.fill();
-
-  // dark visor cavity
   ctx.fillStyle=elite?'#2f103f':'#180f26';
   ctx.beginPath();
   ctx.moveTo(22,-8);ctx.lineTo(31,-7);ctx.lineTo(33,-3);ctx.lineTo(29,0);ctx.lineTo(22,0);ctx.lineTo(19,-4);ctx.closePath();ctx.fill();
+  ctx.fillStyle=elite?'rgba(255,255,255,.14)':'rgba(255,255,255,.10)';
+  ctx.fillRect(23,-7,7,1);
 
-  // glowing violet eye
   ctx.fillStyle=elite?'#ff91ff':'#c24dff';
   ctx.fillRect(25,-5,6,blink);
   ctx.fillStyle='#ffffff';
   if(blink>2)ctx.fillRect(27,-4,2,2);
 
-  // top dorsal blade / spine fin
+  // dorsal blade
   ctx.fillStyle=elite?'#d7cbef':'#bcaedc';
   ctx.beginPath();
   ctx.moveTo(5,-13);ctx.lineTo(15,-23);ctx.lineTo(24,-13);ctx.lineTo(18,-12);ctx.lineTo(9,-11);ctx.closePath();ctx.fill();
   ctx.strokeStyle=elite?'#8e6bb8':'#705191';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(14,-21);ctx.lineTo(15,-13);ctx.stroke();
 
-  // front raptor-like legs and claws
+  // front legs and claws
   ctx.strokeStyle=elite?'#f1c1ff':'#d4bdf7';ctx.lineWidth=4;
   ctx.beginPath();
   ctx.moveTo(12,8);ctx.lineTo(19,15-step*.2);ctx.lineTo(17,22-step*.1);
@@ -994,7 +989,6 @@ function drawVoidStalker(h,t){
   ctx.moveTo(27,21+step*.15);ctx.lineTo(22,23+step*.15);
   ctx.stroke();
 
-  // little belly sparks and chip details
   ctx.fillStyle=elite?'#ffc7ff':'#f9a0ff';
   ctx.fillRect(-2,4,2,2);ctx.fillRect(11,1,2,2);ctx.fillRect(7,-10,1,1);ctx.fillRect(16,-9,1,1);
 
@@ -1007,7 +1001,7 @@ function drawVoidStalker(h,t){
 }
 
 function drawCosmicCore(h,t){
-  // V63: more layered and dimensional. This should feel special/important at a glance.
+  // V64: premium Cosmic Core pass. More layered, more dimensional, more "main reward" energy.
   const phase=t*.0015+h.x*.004;
   const pulse=1+Math.sin(t*.009+h.x*.012)*.055;
   const bob=Math.sin(t*.006+h.x*.01)*1.4;
@@ -1015,54 +1009,73 @@ function drawCosmicCore(h,t){
   ctx.translate(0,bob);
   ctx.scale(pulse,pulse);
 
-  // compact aura
-  const aura=ctx.createRadialGradient(0,0,4,0,0,28);
-  aura.addColorStop(0,'rgba(255,255,255,.24)');
-  aura.addColorStop(.28,'rgba(111,239,255,.18)');
-  aura.addColorStop(.55,'rgba(244,118,255,.12)');
+  // larger halo / aura
+  const aura=ctx.createRadialGradient(0,0,4,0,0,31);
+  aura.addColorStop(0,'rgba(255,255,255,.26)');
+  aura.addColorStop(.20,'rgba(111,239,255,.22)');
+  aura.addColorStop(.48,'rgba(244,118,255,.16)');
+  aura.addColorStop(.74,'rgba(140,95,255,.10)');
   aura.addColorStop(1,'rgba(90,55,220,0)');
   ctx.fillStyle=aura;
-  ctx.beginPath();ctx.arc(0,0,28,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,31,0,Math.PI*2);ctx.fill();
 
-  // outer containment ring glow
-  ctx.globalAlpha=.45;
+  // orbiting rings / containment field
+  ctx.globalAlpha=.46;
   ctx.strokeStyle='#ffcf69';ctx.lineWidth=2;
-  ctx.beginPath();ctx.ellipse(0,0,23,8,phase*.9,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,24,8,phase*.95,0,Math.PI*2);ctx.stroke();
   ctx.strokeStyle='#7de8ff';
-  ctx.beginPath();ctx.ellipse(0,0,9,23,-phase*.7,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,10,24,-phase*.75,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='rgba(255,160,255,.70)';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.ellipse(0,0,19,14,phase*.35,0,Math.PI*2);ctx.stroke();
   ctx.globalAlpha=1;
 
-  // small orbit shards first for silhouette richness
-  const shardColors=['#ff98e1','#8af1ff','#ffe48b','#a88cff'];
-  for(let i=0;i<4;i++){
-    const ang=phase*1.1+i*Math.PI/2;
-    const sx=Math.cos(ang)*17;
-    const sy=Math.sin(ang)*12;
+  // orbit shards
+  const shardColors=['#ff98e1','#8af1ff','#ffe48b','#a88cff','#7ce8ff','#f0a3ff'];
+  for(let i=0;i<6;i++){
+    const ang=phase*1.08+i*Math.PI/3;
+    const sx=Math.cos(ang)*(i%2?15:18);
+    const sy=Math.sin(ang)*(i%2?11:14);
     ctx.fillStyle=shardColors[i];
     ctx.beginPath();
-    ctx.moveTo(sx,sy-6);ctx.lineTo(sx+4,sy);ctx.lineTo(sx,sy+6);ctx.lineTo(sx-4,sy);ctx.closePath();ctx.fill();
+    ctx.moveTo(sx,sy-5);ctx.lineTo(sx+3.5,sy);ctx.lineTo(sx,sy+5);ctx.lineTo(sx-3.5,sy);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.35)';
+    ctx.fillRect(Math.round(sx)-1,Math.round(sy)-2,1,1);
   }
 
-  // dark spherical core body
+  // dark spherical housing / core shell
   const coreBody=ctx.createRadialGradient(-3,-4,2,0,0,18);
-  coreBody.addColorStop(0,'#5a43db');
-  coreBody.addColorStop(.4,'#2f1f83');
-  coreBody.addColorStop(.78,'#151139');
-  coreBody.addColorStop(1,'#0d0a20');
+  coreBody.addColorStop(0,'#644cf0');
+  coreBody.addColorStop(.32,'#38259e');
+  coreBody.addColorStop(.62,'#1a144d');
+  coreBody.addColorStop(1,'#0b091a');
   ctx.fillStyle=coreBody;
   ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.fill();
 
-  // galaxy center swirl
-  const gal=ctx.createRadialGradient(0,0,1,0,0,9);
+  // outer shell rim
+  ctx.strokeStyle='rgba(188,160,255,.40)';ctx.lineWidth=1.3;
+  ctx.beginPath();ctx.arc(0,0,13.4,0,Math.PI*2);ctx.stroke();
+
+  // galaxy center swirl / nucleus
+  const gal=ctx.createRadialGradient(0,0,1,0,0,10);
   gal.addColorStop(0,'#ffffff');
-  gal.addColorStop(.22,'#8cf4ff');
-  gal.addColorStop(.48,'#f87dff');
-  gal.addColorStop(.82,'#6530d4');
+  gal.addColorStop(.16,'#c6fbff');
+  gal.addColorStop(.34,'#8cf4ff');
+  gal.addColorStop(.54,'#f87dff');
+  gal.addColorStop(.80,'#6530d4');
   gal.addColorStop(1,'rgba(101,48,212,0)');
   ctx.fillStyle=gal;
-  ctx.beginPath();ctx.arc(0,0,9,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();
 
-  // main vertical crystal and base shard cluster
+  // tiny spiral arms to hint galaxy energy
+  ctx.globalAlpha=.52;
+  ctx.strokeStyle='#ffd66d';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.arc(0,0,6.5,0.4,2.3);ctx.stroke();
+  ctx.strokeStyle='#7de8ff';
+  ctx.beginPath();ctx.arc(0,0,5.2,3.3,5.0);ctx.stroke();
+  ctx.globalAlpha=1;
+
+  // central crystal body
   ctx.fillStyle='#77edff';
   ctx.beginPath();
   ctx.moveTo(0,-20);ctx.lineTo(9,-5);ctx.lineTo(6,15);ctx.lineTo(0,21);ctx.lineTo(-7,14);ctx.lineTo(-9,-5);ctx.closePath();ctx.fill();
@@ -1071,20 +1084,25 @@ function drawCosmicCore(h,t){
   ctx.fillStyle='#9d76ff';
   ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(9,-5);ctx.lineTo(6,15);ctx.lineTo(0,17);ctx.closePath();ctx.fill();
 
-  // side shards give it a valuable cluster silhouette
+  // additional side cluster shards for richer silhouette
   ctx.fillStyle='#ff86d7';
   ctx.beginPath();ctx.moveTo(-10,2);ctx.lineTo(-17,-7);ctx.lineTo(-15,10);ctx.lineTo(-7,15);ctx.closePath();ctx.fill();
   ctx.fillStyle='#ffe48b';
   ctx.beginPath();ctx.moveTo(10,4);ctx.lineTo(16,-5);ctx.lineTo(17,11);ctx.lineTo(7,16);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#7ef0ff';
+  ctx.beginPath();ctx.moveTo(-3,-15);ctx.lineTo(-7,-9);ctx.lineTo(-5,-2);ctx.lineTo(-1,-5);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#ffb2ef';
+  ctx.beginPath();ctx.moveTo(3,13);ctx.lineTo(8,10);ctx.lineTo(7,17);ctx.lineTo(2,18);ctx.closePath();ctx.fill();
 
-  // subtle containment arcs around the main crystal
-  ctx.strokeStyle='rgba(255,255,255,.30)';ctx.lineWidth=1;
+  // containment arcs hugging the crystal
+  ctx.strokeStyle='rgba(255,255,255,.32)';ctx.lineWidth=1;
   ctx.beginPath();ctx.arc(0,0,16,-.6,.9);ctx.stroke();
   ctx.beginPath();ctx.arc(0,0,12,2.1,3.7);ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,18,4.2,5.5);ctx.stroke();
 
-  // white glint pixels
+  // glints
   ctx.fillStyle='#ffffff';
-  ctx.fillRect(-2,-13,2,5);ctx.fillRect(-13,-3,2,2);ctx.fillRect(11,0,2,2);ctx.fillRect(0,2,1,1);
+  ctx.fillRect(-2,-13,2,5);ctx.fillRect(-13,-3,2,2);ctx.fillRect(11,0,2,2);ctx.fillRect(0,2,1,1);ctx.fillRect(4,-2,1,1);
 
   ctx.restore();
 }
