@@ -233,25 +233,18 @@ function spawnDebris(x,y,type,elite=false){
 }
 
 function spawnCrystalCollectFX(x,y){
-  const cols=['#ebffff','#a9faff','#ffd3ff','#fff1a8'];
-  for(let i=0;i<10;i++){
+  // V67: contained pickup shimmer. No halo, no explosion, almost no travel.
+  const cols=['#f5ffff','#a9faff','#ffd8ff','#fff2aa','#c8b5ff'];
+  for(let i=0;i<12;i++){
     particles.push({
-      x:x+(Math.random()-.5)*10,
-      y:y+(Math.random()-.5)*10,
-      vx:(Math.random()-.5)*95,
-      vy:-25-Math.random()*90,
-      life:.16+Math.random()*.18,
+      x:x+(Math.random()-.5)*18,
+      y:y+(Math.random()-.5)*18,
+      vx:(Math.random()-.5)*24,
+      vy:(Math.random()-.5)*20-5,
+      life:.20+Math.random()*.22,
       col:cols[(Math.random()*cols.length)|0]
     });
   }
-  shockwaves.push({
-    x,y,
-    r:4,
-    life:.16,
-    maxLife:.16,
-    type:'crystalShimmer',
-    elite:false
-  });
 }
 
 function addHazardOnPlatform(p,type,pos=.55){
@@ -555,14 +548,16 @@ function update(dt){
      h.type==='barrier' ? '#7ee8ff' :
      '#ffffff';
    const burstCount =
-     h.type==='crystal' ? 8 :
      h.elite ? 42 :
      (h.type==='table'||h.type==='barrier') ? 26 : 20;
-   burst(hh.x+hh.w/2,hh.y+hh.h/2,burstCount,burstColor);
-   flash.style.opacity = h.elite ? .72 : (h.type==='crystal' ? .14 : .34);
-   setTimeout(()=>flash.style.opacity=0,h.type==='crystal'?28:45);
-   if(h.type==='crystal') spawnCrystalCollectFX(h.x+h.w/2,h.y+h.h/2);
-   else spawnDebris(h.x+h.w/2,h.y+h.h/2,h.type,!!h.elite);
+   if(h.type==='crystal'){
+     spawnCrystalCollectFX(h.x+h.w/2,h.y+h.h/2);
+   } else {
+     burst(hh.x+hh.w/2,hh.y+hh.h/2,burstCount,burstColor);
+     spawnDebris(h.x+h.w/2,h.y+h.h/2,h.type,!!h.elite);
+   }
+   flash.style.opacity = h.elite ? .72 : (h.type==='crystal' ? .07 : .34);
+   setTimeout(()=>flash.style.opacity=0,h.type==='crystal'?24:45);
  }
 
  if(P.y>H+160){ die(); return; }
