@@ -849,7 +849,7 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.restore();
 }
 
-// V64 luxury texture pass: premium art polish across Mars variants, Void Stalker, Cosmic Core, and Thorn Maw, with the biggest boost going to the Cosmic Core.
+// V65 art fidelity pass 1: Cosmic Core rebuilt around the selected concept art silhouette; all other artifacts remain V64.
 
 function drawVoidStalker(h,t){
   // V64: polished biomech pass—extra shell plating, visor depth, and cleaner silhouette texture.
@@ -1001,108 +1001,173 @@ function drawVoidStalker(h,t){
 }
 
 function drawCosmicCore(h,t){
-  // V64: premium Cosmic Core pass. More layered, more dimensional, more "main reward" energy.
-  const phase=t*.0015+h.x*.004;
-  const pulse=1+Math.sin(t*.009+h.x*.012)*.055;
-  const bob=Math.sin(t*.006+h.x*.01)*1.4;
+  // V65 ART FIDELITY PASS 1 — COSMIC CORE ONLY.
+  // Concept target: contained galaxy relic first, crystal satellites second.
+  // Same gameplay/hitbox/spawn logic. This function is presentation only.
+  const phase=t*.00135+h.x*.0038;
+  const pulse=1+Math.sin(t*.008+h.x*.012)*.035;
+  const bob=Math.sin(t*.0058+h.x*.01)*1.25;
+  const ringTilt=-.16;
+
   ctx.save();
   ctx.translate(0,bob);
   ctx.scale(pulse,pulse);
 
-  // larger halo / aura
+  // Soft relic aura. Kept compact so it does not blur into enemy/thorn silhouettes.
   const aura=ctx.createRadialGradient(0,0,4,0,0,31);
-  aura.addColorStop(0,'rgba(255,255,255,.26)');
-  aura.addColorStop(.20,'rgba(111,239,255,.22)');
-  aura.addColorStop(.48,'rgba(244,118,255,.16)');
-  aura.addColorStop(.74,'rgba(140,95,255,.10)');
-  aura.addColorStop(1,'rgba(90,55,220,0)');
+  aura.addColorStop(0,'rgba(255,255,255,.30)');
+  aura.addColorStop(.24,'rgba(98,236,255,.22)');
+  aura.addColorStop(.52,'rgba(247,103,255,.15)');
+  aura.addColorStop(.78,'rgba(113,74,255,.08)');
+  aura.addColorStop(1,'rgba(70,40,180,0)');
   ctx.fillStyle=aura;
   ctx.beginPath();ctx.arc(0,0,31,0,Math.PI*2);ctx.fill();
 
-  // orbiting rings / containment field
-  ctx.globalAlpha=.46;
-  ctx.strokeStyle='#ffcf69';ctx.lineWidth=2;
-  ctx.beginPath();ctx.ellipse(0,0,24,8,phase*.95,0,Math.PI*2);ctx.stroke();
-  ctx.strokeStyle='#7de8ff';
-  ctx.beginPath();ctx.ellipse(0,0,10,24,-phase*.75,0,Math.PI*2);ctx.stroke();
-  ctx.strokeStyle='rgba(255,160,255,.70)';
-  ctx.lineWidth=1;
-  ctx.beginPath();ctx.ellipse(0,0,19,14,phase*.35,0,Math.PI*2);ctx.stroke();
-  ctx.globalAlpha=1;
+  // Helper: jewel-like satellite crystal with a real faceted read.
+  function coreShard(x,y,s,rot,main='#a36cff',hi='#f0d7ff',shade='#5630a8'){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(rot);
+    ctx.scale(s,s);
 
-  // orbit shards
-  const shardColors=['#ff98e1','#8af1ff','#ffe48b','#a88cff','#7ce8ff','#f0a3ff'];
-  for(let i=0;i<6;i++){
-    const ang=phase*1.08+i*Math.PI/3;
-    const sx=Math.cos(ang)*(i%2?15:18);
-    const sy=Math.sin(ang)*(i%2?11:14);
-    ctx.fillStyle=shardColors[i];
+    ctx.fillStyle=main;
     ctx.beginPath();
-    ctx.moveTo(sx,sy-5);ctx.lineTo(sx+3.5,sy);ctx.lineTo(sx,sy+5);ctx.lineTo(sx-3.5,sy);ctx.closePath();ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,.35)';
-    ctx.fillRect(Math.round(sx)-1,Math.round(sy)-2,1,1);
+    ctx.moveTo(0,-7);ctx.lineTo(5,-1);ctx.lineTo(3,6);ctx.lineTo(0,8);
+    ctx.lineTo(-4,4);ctx.lineTo(-5,-1);ctx.closePath();ctx.fill();
+
+    ctx.fillStyle=hi;
+    ctx.beginPath();
+    ctx.moveTo(0,-7);ctx.lineTo(0,6);ctx.lineTo(-4,4);ctx.lineTo(-5,-1);ctx.closePath();ctx.fill();
+
+    ctx.fillStyle=shade;
+    ctx.beginPath();
+    ctx.moveTo(0,-7);ctx.lineTo(5,-1);ctx.lineTo(3,6);ctx.lineTo(0,6);ctx.closePath();ctx.fill();
+
+    ctx.fillStyle='rgba(255,255,255,.9)';
+    ctx.fillRect(-1,-4,1.5,3);
+    ctx.restore();
   }
 
-  // dark spherical housing / core shell
-  const coreBody=ctx.createRadialGradient(-3,-4,2,0,0,18);
-  coreBody.addColorStop(0,'#644cf0');
-  coreBody.addColorStop(.32,'#38259e');
-  coreBody.addColorStop(.62,'#1a144d');
-  coreBody.addColorStop(1,'#0b091a');
-  ctx.fillStyle=coreBody;
-  ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.fill();
+  // Satellite crystals sit in four strong cardinal positions like the concept art.
+  // Tiny orbit drift gives life without destroying the silhouette.
+  const driftX=Math.sin(phase*1.4)*1.2;
+  const driftY=Math.cos(phase*1.2)*.9;
+  coreShard(0,-23-driftY,.72,0,'#b85dff','#f4d9ff','#6430bc');
+  coreShard(0,23+driftY,.72,Math.PI,'#9f68ff','#e5dcff','#5532a9');
+  coreShard(-23-driftX,0,.72,-Math.PI/2,'#d26dff','#ffdafa','#7132b0');
+  coreShard(23+driftX,0,.72,Math.PI/2,'#86ddff','#e7fbff','#4265bb');
 
-  // outer shell rim
-  ctx.strokeStyle='rgba(188,160,255,.40)';ctx.lineWidth=1.3;
-  ctx.beginPath();ctx.arc(0,0,13.4,0,Math.PI*2);ctx.stroke();
+  // Two smaller satellite fragments keep the concept's fractured-artifact richness.
+  coreShard(-15,-16,.36,-.5,'#78e8ff','#e8ffff','#5367c5');
+  coreShard(16,15,.34,.55,'#ffc36b','#fff0b6','#a44e87');
 
-  // galaxy center swirl / nucleus
-  const gal=ctx.createRadialGradient(0,0,1,0,0,10);
-  gal.addColorStop(0,'#ffffff');
-  gal.addColorStop(.16,'#c6fbff');
-  gal.addColorStop(.34,'#8cf4ff');
-  gal.addColorStop(.54,'#f87dff');
-  gal.addColorStop(.80,'#6530d4');
-  gal.addColorStop(1,'rgba(101,48,212,0)');
-  ctx.fillStyle=gal;
-  ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();
+  // BACK halves of containment rings. Drawn before orb to create true depth.
+  ctx.save();
+  ctx.rotate(ringTilt);
+  ctx.globalAlpha=.78;
+  ctx.strokeStyle='#ffca68';ctx.lineWidth=2.4;
+  ctx.beginPath();ctx.ellipse(0,0,25,7.3,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='#ffe6a8';ctx.lineWidth=.8;
+  ctx.beginPath();ctx.ellipse(0,0,22.5,5.8,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.restore();
 
-  // tiny spiral arms to hint galaxy energy
+  ctx.save();
+  ctx.rotate(.52);
   ctx.globalAlpha=.52;
-  ctx.strokeStyle='#ffd66d';ctx.lineWidth=1.2;
-  ctx.beginPath();ctx.arc(0,0,6.5,0.4,2.3);ctx.stroke();
-  ctx.strokeStyle='#7de8ff';
-  ctx.beginPath();ctx.arc(0,0,5.2,3.3,5.0);ctx.stroke();
+  ctx.strokeStyle='#8beaff';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.ellipse(0,0,8.5,21.5,0,Math.PI,Math.PI*2);ctx.stroke();
+  ctx.restore();
   ctx.globalAlpha=1;
 
-  // central crystal body
-  ctx.fillStyle='#77edff';
-  ctx.beginPath();
-  ctx.moveTo(0,-20);ctx.lineTo(9,-5);ctx.lineTo(6,15);ctx.lineTo(0,21);ctx.lineTo(-7,14);ctx.lineTo(-9,-5);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#d6fbff';
-  ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(0,17);ctx.lineTo(-7,14);ctx.lineTo(-9,-5);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#9d76ff';
-  ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(9,-5);ctx.lineTo(6,15);ctx.lineTo(0,17);ctx.closePath();ctx.fill();
+  // Outer relic shell: dark glass sphere with blue-purple edge light.
+  const shell=ctx.createRadialGradient(-5,-6,2,0,0,16.5);
+  shell.addColorStop(0,'#7659e8');
+  shell.addColorStop(.34,'#33258d');
+  shell.addColorStop(.68,'#181343');
+  shell.addColorStop(1,'#080817');
+  ctx.fillStyle=shell;
+  ctx.beginPath();ctx.arc(0,0,15.2,0,Math.PI*2);ctx.fill();
 
-  // additional side cluster shards for richer silhouette
-  ctx.fillStyle='#ff86d7';
-  ctx.beginPath();ctx.moveTo(-10,2);ctx.lineTo(-17,-7);ctx.lineTo(-15,10);ctx.lineTo(-7,15);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#ffe48b';
-  ctx.beginPath();ctx.moveTo(10,4);ctx.lineTo(16,-5);ctx.lineTo(17,11);ctx.lineTo(7,16);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#7ef0ff';
-  ctx.beginPath();ctx.moveTo(-3,-15);ctx.lineTo(-7,-9);ctx.lineTo(-5,-2);ctx.lineTo(-1,-5);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#ffb2ef';
-  ctx.beginPath();ctx.moveTo(3,13);ctx.lineTo(8,10);ctx.lineTo(7,17);ctx.lineTo(2,18);ctx.closePath();ctx.fill();
+  // Shell rim / containment lip.
+  ctx.strokeStyle='#9f8cff';ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.arc(0,0,14.6,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=.38;
+  ctx.strokeStyle='#d8f7ff';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(-1,-1,12.9,3.6,5.35);ctx.stroke();
+  ctx.globalAlpha=1;
 
-  // containment arcs hugging the crystal
-  ctx.strokeStyle='rgba(255,255,255,.32)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.arc(0,0,16,-.6,.9);ctx.stroke();
-  ctx.beginPath();ctx.arc(0,0,12,2.1,3.7);ctx.stroke();
-  ctx.beginPath();ctx.arc(0,0,18,4.2,5.5);ctx.stroke();
+  // Inner galaxy body: layered nucleus + luminous disk.
+  const galaxy=ctx.createRadialGradient(0,0,1,0,0,10.8);
+  galaxy.addColorStop(0,'#ffffff');
+  galaxy.addColorStop(.12,'#fff3bc');
+  galaxy.addColorStop(.26,'#ff8be5');
+  galaxy.addColorStop(.46,'#965fff');
+  galaxy.addColorStop(.68,'#5adfff');
+  galaxy.addColorStop(.88,'#3041ae');
+  galaxy.addColorStop(1,'rgba(18,17,72,0)');
+  ctx.fillStyle=galaxy;
+  ctx.beginPath();ctx.arc(0,0,10.5,0,Math.PI*2);ctx.fill();
 
-  // glints
+  // Galaxy spiral bands. These rotate slowly inside the fixed housing.
+  ctx.save();
+  ctx.rotate(phase*.55);
+  ctx.globalAlpha=.84;
+  ctx.strokeStyle='#fff0a6';ctx.lineWidth=1.8;
+  ctx.beginPath();ctx.ellipse(0,0,8.2,3.6,.1,.15,Math.PI*1.45);ctx.stroke();
+  ctx.strokeStyle='#ff91e7';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.ellipse(0,0,7.1,2.8,-.25,Math.PI*1.03,Math.PI*2.12);ctx.stroke();
+  ctx.strokeStyle='#77ecff';ctx.lineWidth=1.1;
+  ctx.beginPath();ctx.ellipse(0,0,5.7,2.1,.35,.3,Math.PI*1.35);ctx.stroke();
+  ctx.restore();
+  ctx.globalAlpha=1;
+
+  // White-hot chaos nucleus.
+  const nucleus=ctx.createRadialGradient(0,0,0,0,0,4.4);
+  nucleus.addColorStop(0,'#ffffff');
+  nucleus.addColorStop(.3,'#fff1b0');
+  nucleus.addColorStop(.62,'#ff7fe8');
+  nucleus.addColorStop(1,'rgba(143,73,255,0)');
+  ctx.fillStyle=nucleus;
+  ctx.beginPath();ctx.arc(0,0,4.4,0,Math.PI*2);ctx.fill();
+
+  // Small containment nodes around the sphere, echoing the concept's mechanical jewel setting.
+  for(let i=0;i<4;i++){
+    const a=i*Math.PI/2+Math.PI/4;
+    const nx=Math.cos(a)*13.5, ny=Math.sin(a)*13.5;
+    ctx.fillStyle='#25164d';
+    ctx.beginPath();ctx.arc(nx,ny,2.1,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=i%2?'#80ecff':'#f685ff';
+    ctx.beginPath();ctx.arc(nx,ny,1.1,0,Math.PI*2);ctx.fill();
+  }
+
+  // FRONT halves of containment rings so the orb is visibly caged, not merely overlapped.
+  ctx.save();
+  ctx.rotate(ringTilt);
+  ctx.globalAlpha=.94;
+  ctx.strokeStyle='#ffca68';ctx.lineWidth=2.6;
+  ctx.beginPath();ctx.ellipse(0,0,25,7.3,0,0,Math.PI);ctx.stroke();
+  ctx.strokeStyle='#fff1b3';ctx.lineWidth=.9;
+  ctx.beginPath();ctx.ellipse(0,0,22.5,5.8,0,0,Math.PI);ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.rotate(.52);
+  ctx.globalAlpha=.60;
+  ctx.strokeStyle='#8beaff';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.ellipse(0,0,8.5,21.5,0,0,Math.PI);ctx.stroke();
+  ctx.restore();
+  ctx.globalAlpha=1;
+
+  // Pixel glints. Sparse on purpose: premium sparkle, not confetti.
   ctx.fillStyle='#ffffff';
-  ctx.fillRect(-2,-13,2,5);ctx.fillRect(-13,-3,2,2);ctx.fillRect(11,0,2,2);ctx.fillRect(0,2,1,1);ctx.fillRect(4,-2,1,1);
+  ctx.fillRect(-8,-10,2,2);
+  ctx.fillRect(10,-6,1.5,1.5);
+  ctx.fillRect(-17,7,1.5,1.5);
+  ctx.fillRect(15,9,1,1);
+  ctx.fillStyle='#8ff5ff';
+  ctx.fillRect(-4,12,1,1);
+  ctx.fillStyle='#ff9bea';
+  ctx.fillRect(7,-13,1,1);
 
   ctx.restore();
 }
