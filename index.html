@@ -1032,150 +1032,191 @@ function drawRingedPlanet(h,t,variant='normal'){
 // V77 final shading pass: Saturns and debris keep the V76 art direction but gain richer light/shadow depth and material feel.
 
 function drawVoidStalker(h,t){
-  // V64: polished biomech pass—extra shell plating, visor depth, and cleaner silhouette texture.
+  // V78: Void Stalker fidelity pass. Preserve the cute/threatening identity while sharpening predator anatomy,
+  // shell segmentation, visor shape, articulated tail, and material shading.
   const elite=!!h.elite;
   const s=elite?1.42:1;
   const phase=t*.008+h.x*.022;
-  const bob=Math.sin(phase)*1.6;
-  const breathe=1+Math.sin(phase*1.6)*.018;
-  const tailWhip=Math.sin(phase*.9)*4;
-  const step=Math.sin(phase*1.15)*1.7;
+  const bob=Math.sin(phase)*1.45;
+  const breathe=1+Math.sin(phase*1.6)*.016;
+  const tailWhip=Math.sin(phase*.9)*4.2;
+  const step=Math.sin(phase*1.15)*1.6;
   const blink=Math.sin(phase*2.7)>.962?2:5;
+
+  const shellLight=elite?'#f4ecff':'#e9e2f2';
+  const shellMid=elite?'#d9c8ef':'#cbbfdb';
+  const shellShade=elite?'#8a68ad':'#75608e';
+  const jointDark=elite?'#3f294d':'#241d2c';
+  const jointMid=elite?'#684a7b':'#4b3a59';
+  const glow=elite?'#ff8dff':'#cf58ff';
+  const glowHot=elite?'#fff0ff':'#ffdfff';
 
   ctx.save();
   ctx.translate(0,bob);
   ctx.scale(s*breathe,s/breathe);
   ctx.scale(-1,1);
 
-  ctx.globalAlpha=elite ? .22 : .10;
+  // controlled aura, tighter than before
+  ctx.globalAlpha=elite ? .18 : .08;
   ctx.fillStyle=elite?'#ff71ff':'#8139d4';
-  ctx.beginPath();ctx.ellipse(1,0,24,16,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(3,-1,25,15,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  // tail
-  ctx.strokeStyle=elite?'#d5c6ef':'#b6a3d8';ctx.lineWidth=5;
-  ctx.beginPath();
-  ctx.moveTo(-17,0);
-  ctx.quadraticCurveTo(-28,-5-tailWhip,-33,-13-tailWhip*.3);
-  ctx.quadraticCurveTo(-36,-19-tailWhip*.15,-31,-22);
-  ctx.stroke();
-  ctx.strokeStyle=elite?'#6f3c92':'#512d72';ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(-17,0);
-  ctx.quadraticCurveTo(-28,-5-tailWhip,-33,-13-tailWhip*.3);
-  ctx.quadraticCurveTo(-36,-19-tailWhip*.15,-31,-22);
-  ctx.stroke();
-  for(let i=0;i<5;i++){
-    const tx=-19-i*3.9;
-    const ty=-2-i*4.2-tailWhip*(.10+i*.03);
-    ctx.fillStyle=i%2? (elite?'#f0e6ff':'#d8cce9') : (elite?'#a062d3':'#854eb6');
-    ctx.beginPath();ctx.arc(tx,ty,2.25-i*.16,0,Math.PI*2);ctx.fill();
+  // segmented tail spine first
+  const tailPts=[];
+  for(let i=0;i<7;i++){
+    const tx=-17-i*3.0;
+    const ty=-1-i*3.25-tailWhip*(.065+i*.025);
+    tailPts.push([tx,ty]);
   }
-  ctx.fillStyle=elite?'#ffb1ff':'#ff79ff';
-  ctx.beginPath();ctx.arc(-32,-22,3.2,0,Math.PI*2);ctx.fill();
-
-  // legs
-  ctx.strokeStyle=elite?'#f1c1ff':'#d4bdf7';ctx.lineWidth=4;
+  ctx.strokeStyle=shellShade;ctx.lineWidth=5.2;
   ctx.beginPath();
-  ctx.moveTo(-8,9);ctx.lineTo(-15,16+step*.2);ctx.lineTo(-13,22+step*.2);
-  ctx.moveTo(-4,8);ctx.lineTo(-8,16-step*.2);ctx.lineTo(-4,22-step*.2);
+  ctx.moveTo(tailPts[0][0],tailPts[0][1]);
+  for(let i=1;i<tailPts.length;i++)ctx.lineTo(tailPts[i][0],tailPts[i][1]);
   ctx.stroke();
-  ctx.strokeStyle=elite?'#9f7ae6':'#7b56b9';ctx.lineWidth=2;
+  ctx.strokeStyle=jointDark;ctx.lineWidth=1.5;
   ctx.beginPath();
-  ctx.moveTo(-13,22+step*.2);ctx.lineTo(-17,24+step*.2);
-  ctx.moveTo(-4,22-step*.2);ctx.lineTo(0,24-step*.2);
+  ctx.moveTo(tailPts[0][0],tailPts[0][1]);
+  for(let i=1;i<tailPts.length;i++)ctx.lineTo(tailPts[i][0],tailPts[i][1]);
   ctx.stroke();
 
-  // main body shell
-  ctx.fillStyle=elite?'#ede3ff':'#dfd7eb';
+  // individual tail armor segments
+  for(let i=0;i<tailPts.length;i++){
+    const [tx,ty]=tailPts[i];
+    ctx.fillStyle=i%2? shellLight:shellMid;
+    ctx.beginPath();ctx.arc(tx,ty,2.25-i*.10,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.36;
+    ctx.fillStyle='#ffffff';ctx.fillRect(tx-1,ty-1,1,1);
+    ctx.globalAlpha=1;
+  }
+  const tip=tailPts[tailPts.length-1];
+  const tipGlow=ctx.createRadialGradient(tip[0],tip[1],0,tip[0],tip[1],5);
+  tipGlow.addColorStop(0,glowHot);tipGlow.addColorStop(.35,glow);tipGlow.addColorStop(1,'rgba(120,50,180,0)');
+  ctx.fillStyle=tipGlow;ctx.beginPath();ctx.arc(tip[0],tip[1],5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=glow;ctx.beginPath();ctx.arc(tip[0],tip[1],2.5,0,Math.PI*2);ctx.fill();
+
+  // rear legs with joint nodes and proper claw angles
+  function leg(x1,y1,x2,y2,x3,y3,flip=1){
+    ctx.strokeStyle=shellLight;ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.stroke();
+    ctx.fillStyle=jointDark;ctx.beginPath();ctx.arc(x2,y2,2.1,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=shellShade;ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(x3,y3);ctx.lineTo(x3+4*flip,y3+1);ctx.moveTo(x3,y3);ctx.lineTo(x3+3*flip,y3-2);ctx.stroke();
+  }
+  leg(-8,9,-15,16+step*.2,-13,22+step*.2,-1);
+  leg(-4,8,-8,16-step*.2,-4,22-step*.2,1);
+
+  // main body shell silhouette, slightly sleeker and more predatory
+  ctx.fillStyle=shellLight;
   ctx.beginPath();
-  ctx.moveTo(-9,-2);ctx.quadraticCurveTo(-3,-14,13,-14);
-  ctx.quadraticCurveTo(21,-14,26,-8);
+  ctx.moveTo(-11,-1);ctx.quadraticCurveTo(-4,-15,12,-15);
+  ctx.quadraticCurveTo(22,-14,27,-8);
   ctx.quadraticCurveTo(30,-2,25,6);
-  ctx.quadraticCurveTo(16,14,0,14);
-  ctx.quadraticCurveTo(-10,13,-16,8);
-  ctx.quadraticCurveTo(-17,2,-9,-2);
+  ctx.quadraticCurveTo(17,14,1,14);
+  ctx.quadraticCurveTo(-11,13,-17,8);
+  ctx.quadraticCurveTo(-18,2,-11,-1);
   ctx.closePath();ctx.fill();
 
-  // layered shell panels
-  ctx.strokeStyle=elite?'#b89add':'#9277b8';ctx.lineWidth=1.25;
+  // directional shell shading
+  ctx.save();
   ctx.beginPath();
-  ctx.moveTo(-2,-12);ctx.lineTo(5,-6);ctx.lineTo(10,-1);
-  ctx.moveTo(3,-11);ctx.lineTo(12,-10);ctx.lineTo(20,-7);
-  ctx.moveTo(1,12);ctx.lineTo(7,6);ctx.lineTo(16,4);
-  ctx.moveTo(-7,-1);ctx.lineTo(0,1);ctx.lineTo(8,1);
+  ctx.moveTo(-11,-1);ctx.quadraticCurveTo(-4,-15,12,-15);ctx.quadraticCurveTo(22,-14,27,-8);
+  ctx.quadraticCurveTo(30,-2,25,6);ctx.quadraticCurveTo(17,14,1,14);
+  ctx.quadraticCurveTo(-11,13,-17,8);ctx.quadraticCurveTo(-18,2,-11,-1);ctx.closePath();
+  ctx.clip();
+  const shade=ctx.createLinearGradient(-14,-12,24,14);
+  shade.addColorStop(0,'rgba(255,255,255,.16)');
+  shade.addColorStop(.42,'rgba(255,255,255,.02)');
+  shade.addColorStop(1,elite?'rgba(67,37,89,.34)':'rgba(39,28,48,.32)');
+  ctx.fillStyle=shade;ctx.fillRect(-20,-18,52,36);
+  ctx.restore();
+
+  // abdomen / exposed biomech underbody
+  ctx.fillStyle=jointDark;
+  ctx.beginPath();
+  ctx.moveTo(-8,1);ctx.quadraticCurveTo(1,8,14,5);
+  ctx.quadraticCurveTo(9,12,-3,11);ctx.quadraticCurveTo(-11,8,-13,4);ctx.closePath();ctx.fill();
+  ctx.fillStyle=jointMid;
+  ctx.fillRect(-5,4,3,2);ctx.fillRect(1,6,3,2);ctx.fillRect(9,4,3,2);
+  ctx.strokeStyle=elite?'#9a70b4':'#6b5079';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(-4,7);ctx.lineTo(3,8);ctx.lineTo(10,6);ctx.stroke();
+
+  // clearer shell segmentation
+  ctx.strokeStyle=shellShade;ctx.lineWidth=1.15;
+  ctx.beginPath();
+  ctx.moveTo(-4,-12);ctx.lineTo(2,-6);ctx.lineTo(7,-2);
+  ctx.moveTo(2,-12);ctx.lineTo(11,-10);ctx.lineTo(20,-7);
+  ctx.moveTo(0,12);ctx.lineTo(7,6);ctx.lineTo(16,4);
+  ctx.moveTo(-9,-1);ctx.lineTo(-1,1);ctx.lineTo(7,1);
+  ctx.moveTo(14,-13);ctx.lineTo(17,-7);ctx.lineTo(22,-4);
   ctx.stroke();
-  ctx.fillStyle=elite?'rgba(255,255,255,.18)':'rgba(255,255,255,.12)';
-  ctx.beginPath();ctx.ellipse(7,-8,7,2.3,-.22,0,Math.PI*2);ctx.fill();
-
-  ctx.fillStyle=elite?'#584071':'#31263d';
-  ctx.beginPath();
-  ctx.moveTo(-7,1);ctx.quadraticCurveTo(1,8,14,5);
-  ctx.quadraticCurveTo(8,12,-3,11);ctx.quadraticCurveTo(-10,8,-12,4);ctx.closePath();ctx.fill();
-  ctx.fillStyle=elite?'#7a5a95':'#5a436d';
-  ctx.fillRect(-4,4,3,2);ctx.fillRect(2,6,3,2);ctx.fillRect(10,4,3,2);
-
-  const core=ctx.createRadialGradient(5,0,1,5,0,7);
-  core.addColorStop(0, elite?'#fff6ff':'#ffe9ff');
-  core.addColorStop(.35, elite?'#ff97ff':'#f573ff');
-  core.addColorStop(1, elite?'#7d2b9a':'#58208a');
-  ctx.fillStyle=core;
-  ctx.beginPath();ctx.arc(5,0,6.2,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle=elite?'#ffc0ff':'#c08fff';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.arc(5,0,8.2,.4,2.4);ctx.stroke();
-
-  // chest plating
-  ctx.fillStyle=elite?'#f0e7ff':'#dfd8ec';
-  ctx.beginPath();
-  ctx.moveTo(13,-12);ctx.lineTo(24,-10);ctx.lineTo(28,-3);ctx.lineTo(22,4);ctx.lineTo(13,3);ctx.lineTo(10,-4);ctx.closePath();ctx.fill();
-  ctx.strokeStyle=elite?'#c4a4e7':'#a485c6';ctx.lineWidth=1.2;
-  ctx.beginPath();ctx.moveTo(14,-8);ctx.lineTo(23,-6);ctx.lineTo(21,0);ctx.stroke();
-  ctx.fillStyle=elite?'rgba(255,255,255,.18)':'rgba(255,255,255,.10)';
-  ctx.fillRect(18,-8,4,1);
-
-  // head / visor
-  ctx.fillStyle=elite?'#f4ecff':'#ebe4f5';
-  ctx.beginPath();
-  ctx.moveTo(20,-14);ctx.lineTo(31,-11);ctx.lineTo(37,-5);ctx.lineTo(34,1);ctx.lineTo(25,4);ctx.lineTo(18,2);ctx.lineTo(15,-4);ctx.lineTo(17,-10);ctx.closePath();ctx.fill();
-  ctx.fillStyle=elite?'#d7cbef':'#bcaedc';
-  ctx.beginPath();ctx.moveTo(18,-11);ctx.lineTo(24,-18);ctx.lineTo(31,-12);ctx.closePath();ctx.fill();
-  ctx.fillStyle=elite?'#2f103f':'#180f26';
-  ctx.beginPath();
-  ctx.moveTo(22,-8);ctx.lineTo(31,-7);ctx.lineTo(33,-3);ctx.lineTo(29,0);ctx.lineTo(22,0);ctx.lineTo(19,-4);ctx.closePath();ctx.fill();
-  ctx.fillStyle=elite?'rgba(255,255,255,.14)':'rgba(255,255,255,.10)';
-  ctx.fillRect(23,-7,7,1);
-
-  ctx.fillStyle=elite?'#ff91ff':'#c24dff';
-  ctx.fillRect(25,-5,6,blink);
+  ctx.globalAlpha=.20;
   ctx.fillStyle='#ffffff';
-  if(blink>2)ctx.fillRect(27,-4,2,2);
+  ctx.beginPath();ctx.ellipse(6,-9,7,2.1,-.22,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
 
-  // dorsal blade
-  ctx.fillStyle=elite?'#d7cbef':'#bcaedc';
+  // chest core recessed into armor
+  ctx.fillStyle=jointDark;
+  ctx.beginPath();ctx.arc(5,0,8.2,0,Math.PI*2);ctx.fill();
+  const core=ctx.createRadialGradient(5,0,1,5,0,7);
+  core.addColorStop(0,glowHot);
+  core.addColorStop(.34,glow);
+  core.addColorStop(1,elite?'#7d2b9a':'#58208a');
+  ctx.fillStyle=core;ctx.beginPath();ctx.arc(5,0,6.2,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=elite?'#ffc0ff':'#c08fff';ctx.lineWidth=1.25;
+  ctx.beginPath();ctx.arc(5,0,8.2,.35,2.55);ctx.stroke();
+
+  // forward chest armor plate
+  ctx.fillStyle=shellLight;
   ctx.beginPath();
-  ctx.moveTo(5,-13);ctx.lineTo(15,-23);ctx.lineTo(24,-13);ctx.lineTo(18,-12);ctx.lineTo(9,-11);ctx.closePath();ctx.fill();
-  ctx.strokeStyle=elite?'#8e6bb8':'#705191';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(14,-21);ctx.lineTo(15,-13);ctx.stroke();
+  ctx.moveTo(12,-12);ctx.lineTo(23,-10);ctx.lineTo(28,-4);ctx.lineTo(23,4);ctx.lineTo(13,3);ctx.lineTo(9,-4);ctx.closePath();ctx.fill();
+  ctx.fillStyle=shellMid;
+  ctx.beginPath();ctx.moveTo(13,-10);ctx.lineTo(22,-8);ctx.lineTo(24,-5);ctx.lineTo(16,-6);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=shellShade;ctx.lineWidth=1.1;
+  ctx.beginPath();ctx.moveTo(14,-8);ctx.lineTo(23,-6);ctx.lineTo(21,0);ctx.stroke();
+
+  // sharper predator head / visor
+  ctx.fillStyle=shellLight;
+  ctx.beginPath();
+  ctx.moveTo(19,-15);ctx.lineTo(31,-12);ctx.lineTo(38,-6);ctx.lineTo(36,-1);
+  ctx.lineTo(31,3);ctx.lineTo(24,4);ctx.lineTo(18,1);ctx.lineTo(15,-5);ctx.lineTo(17,-11);ctx.closePath();ctx.fill();
+
+  // crown blade and cheek plate
+  ctx.fillStyle=shellMid;
+  ctx.beginPath();ctx.moveTo(18,-12);ctx.lineTo(24,-20);ctx.lineTo(32,-12);ctx.lineTo(27,-11);ctx.lineTo(22,-10);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(28,-2);ctx.lineTo(35,-4);ctx.lineTo(33,1);ctx.lineTo(29,3);ctx.closePath();ctx.fill();
+
+  // visor socket and eye
+  ctx.fillStyle=elite?'#2b0e38':'#160d23';
+  ctx.beginPath();
+  ctx.moveTo(21,-8);ctx.lineTo(31,-8);ctx.lineTo(35,-5);ctx.lineTo(31,-1);ctx.lineTo(23,0);ctx.lineTo(19,-4);ctx.closePath();ctx.fill();
+  ctx.globalAlpha=.18;ctx.fillStyle='#ffffff';ctx.fillRect(23,-7,8,1);ctx.globalAlpha=1;
+  ctx.fillStyle=glow;
+  ctx.fillRect(25,-5,7,blink);
+  ctx.fillStyle='#ffffff';if(blink>2)ctx.fillRect(28,-4,2,2);
+
+  // dorsal blade, cleaner silhouette
+  ctx.fillStyle=shellMid;
+  ctx.beginPath();
+  ctx.moveTo(5,-14);ctx.lineTo(15,-24);ctx.lineTo(24,-14);ctx.lineTo(18,-12);ctx.lineTo(9,-12);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=shellShade;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(14,-22);ctx.lineTo(15,-14);ctx.stroke();
 
   // front legs and claws
-  ctx.strokeStyle=elite?'#f1c1ff':'#d4bdf7';ctx.lineWidth=4;
-  ctx.beginPath();
-  ctx.moveTo(12,8);ctx.lineTo(19,15-step*.2);ctx.lineTo(17,22-step*.1);
-  ctx.moveTo(18,7);ctx.lineTo(27,14+step*.15);ctx.lineTo(27,21+step*.15);
-  ctx.stroke();
-  ctx.strokeStyle=elite?'#9f7ae6':'#7b56b9';ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(17,22-step*.1);ctx.lineTo(12,24-step*.1);
-  ctx.moveTo(27,21+step*.15);ctx.lineTo(22,23+step*.15);
-  ctx.stroke();
+  leg(12,8,19,15-step*.2,17,22-step*.1,-1);
+  leg(18,7,27,14+step*.15,27,21+step*.15,-1);
 
+  // small shell glints and biotech nodes
   ctx.fillStyle=elite?'#ffc7ff':'#f9a0ff';
   ctx.fillRect(-2,4,2,2);ctx.fillRect(11,1,2,2);ctx.fillRect(7,-10,1,1);ctx.fillRect(16,-9,1,1);
+  ctx.fillStyle=elite?'#b8f4ff':'#99dfff';
+  ctx.fillRect(-10,-2,1,1);ctx.fillRect(20,5,1,1);
 
   if(elite){
-    ctx.globalAlpha=.42;
-    ctx.strokeStyle='#ffb2ff';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(4,-1,28+Math.sin(phase*1.5)*2,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=.30;
+    ctx.strokeStyle='#ffb2ff';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(4,-1,28+Math.sin(phase*1.5)*1.5,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=1;
   }
   ctx.restore();
 }
