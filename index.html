@@ -233,15 +233,15 @@ function spawnDebris(x,y,type,elite=false){
 }
 
 function spawnCrystalCollectFX(x,y){
-  // V67: contained pickup shimmer. No halo, no explosion, almost no travel.
-  const cols=['#f5ffff','#a9faff','#ffd8ff','#fff2aa','#c8b5ff'];
-  for(let i=0;i<12;i++){
+  // V71: ~22% richer rainbow shimmer. Still contained in place: no halo, no explosion.
+  const cols=['#f5ffff','#9ff6ff','#ff9ee8','#fff28a','#c8b5ff','#8dffba','#ffb06b'];
+  for(let i=0;i<15;i++){
     particles.push({
-      x:x+(Math.random()-.5)*18,
-      y:y+(Math.random()-.5)*18,
-      vx:(Math.random()-.5)*24,
-      vy:(Math.random()-.5)*20-5,
-      life:.20+Math.random()*.22,
+      x:x+(Math.random()-.5)*19,
+      y:y+(Math.random()-.5)*19,
+      vx:(Math.random()-.5)*22,
+      vy:(Math.random()-.5)*18-4,
+      life:.22+Math.random()*.24,
       col:cols[(Math.random()*cols.length)|0]
     });
   }
@@ -265,13 +265,13 @@ function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
 function playFloorY(){
   // V70 framing pass: keep the running lane lower on screen so the player
   // gets more sky/look-ahead, especially on short landscape phone screens.
-  if(W < H) return H*.87;   // portrait: a little more breathing room
-  return H*.86;             // landscape: stronger correction from the old ~75% floor
+  if(W < H) return H*.89;   // V71 portrait: one more small step lower
+  return H*.885;            // V71 landscape: slightly more open/lower framing
 }
 function playCeilingY(){
   // Prevent procedural routes from climbing into the top strip of the screen.
   // This keeps even mastery/upper-path platforms inside a comfortable visual band.
-  return W < H ? H*.30 : H*.32;
+  return W < H ? H*.32 : H*.35;
 }
 function fitPlatformY(y){
   return clamp(y,playCeilingY(),playFloorY());
@@ -1894,7 +1894,7 @@ function draw(){
    const x=p.x-world-viewLookAhead();
    // V70: slimmer visible platform mass makes the world feel less zoomed-in.
    // Collision geometry is unchanged; this is presentation only.
-   const vh=Math.min(p.h,isPortrait()?34:30);
+   const vh=Math.min(p.h,isPortrait()?32:27);
    if(x>W+100||x+p.w<-100)continue;
 
    ctx.save();
@@ -2181,12 +2181,43 @@ function draw(){
      ctx.fillStyle='rgba(255,255,255,.45)';
      ctx.fillRect(-d.size*.45,-d.size*.18,d.size*.45,2);
    } else {
+     // V71: Ringed Planet / table debris should read as broken stone, not bubbles.
+     // Chunky angular 16-bit rubble with one lit face and one dark chipped face.
+     const s=d.size;
      ctx.beginPath();
-     ctx.arc(0,0,d.size*.68,0,Math.PI*2);
+     ctx.moveTo(-s*.78,-s*.28);
+     ctx.lineTo(-s*.24,-s*.78);
+     ctx.lineTo(s*.56,-s*.58);
+     ctx.lineTo(s*.82,-s*.08);
+     ctx.lineTo(s*.38,s*.68);
+     ctx.lineTo(-s*.42,s*.60);
+     ctx.lineTo(-s*.82,s*.18);
+     ctx.closePath();
      ctx.fill();
-     ctx.strokeStyle='rgba(255,205,120,.75)';
-     ctx.lineWidth=2;
-     ctx.beginPath();ctx.arc(0,0,d.size*.95,0,Math.PI*2);ctx.stroke();
+
+     // bright broken edge
+     ctx.fillStyle='rgba(255,219,150,.62)';
+     ctx.beginPath();
+     ctx.moveTo(-s*.58,-s*.26);
+     ctx.lineTo(-s*.18,-s*.60);
+     ctx.lineTo(s*.36,-s*.46);
+     ctx.lineTo(s*.12,-s*.20);
+     ctx.closePath();
+     ctx.fill();
+
+     // dark chipped underside
+     ctx.fillStyle='rgba(36,20,55,.45)';
+     ctx.beginPath();
+     ctx.moveTo(-s*.42,s*.14);
+     ctx.lineTo(s*.58,s*.02);
+     ctx.lineTo(s*.34,s*.56);
+     ctx.lineTo(-s*.36,s*.50);
+     ctx.closePath();
+     ctx.fill();
+
+     // tiny pixel fracture mark
+     ctx.fillStyle='rgba(255,244,208,.7)';
+     ctx.fillRect(-1,-1,2,1);
    }
    ctx.restore();
  }
