@@ -233,20 +233,67 @@ function spawnDebris(x,y,type,elite=false,marsVariant=null){
 }
 
 function spawnCrystalCollectFX(x,y){
-  // V72: visibly rainbow shimmer, still contained in place with no halo or explosion.
-  const cols=['#ff6b8a','#ffb35c','#fff06a','#7dff9c','#6fe8ff','#7f9cff','#d98cff','#ffffff'];
-  for(let i=0;i<20;i++){
+  // V76: glorious prismatic reward shimmer — still elegant and contained, not a halo or explosion.
+  const jewelCols=['#ffffff','#ffe87e','#ff8fe6','#7fe8ff','#8ef7a8','#8c9fff','#d89cff'];
+
+  // slow star glints that linger near the pickup point
+  for(let i=0;i<12;i++){
+    const a=(Math.PI*2/12)*i + Math.random()*.16;
+    const r=5+Math.random()*10;
     particles.push({
-      x:x+(Math.random()-.5)*22,
-      y:y+(Math.random()-.5)*22,
-      vx:(Math.random()-.5)*14,
-      vy:(Math.random()-.5)*12-2,
-      life:.42+Math.random()*.28,
-      maxLife:.70,
-      col:cols[i%cols.length],
+      x:x+Math.cos(a)*r,
+      y:y+Math.sin(a)*r,
+      vx:Math.cos(a)*(8+Math.random()*14),
+      vy:Math.sin(a)*(8+Math.random()*14)-4,
+      life:.70+Math.random()*.28,
+      maxLife:1.0,
+      col:jewelCols[i%jewelCols.length],
       kind:'crystalShimmer',
+      shape:'star',
       tw:Math.random()*Math.PI*2,
-      size:1.8+Math.random()*1.8
+      size:2.4+Math.random()*1.8,
+      grav:-10,
+      drag:.992
+    });
+  }
+
+  // faceted jewel flecks that read more like a reward than confetti
+  for(let i=0;i<10;i++){
+    const a=Math.random()*Math.PI*2;
+    const sp=18+Math.random()*26;
+    particles.push({
+      x:x+Math.cos(a)*(2+Math.random()*4),
+      y:y+Math.sin(a)*(2+Math.random()*4),
+      vx:Math.cos(a)*sp,
+      vy:Math.sin(a)*sp-8,
+      life:.52+Math.random()*.20,
+      maxLife:.82,
+      col:jewelCols[(i+2)%jewelCols.length],
+      kind:'crystalShimmer',
+      shape:'diamond',
+      tw:Math.random()*Math.PI*2,
+      size:1.8+Math.random()*1.3,
+      grav:18,
+      drag:.988
+    });
+  }
+
+  // tiny hot core twinkles for that “absorbed relic” feel
+  for(let i=0;i<6;i++){
+    particles.push({
+      x:x+(Math.random()-.5)*8,
+      y:y+(Math.random()-.5)*8,
+      vx:(Math.random()-.5)*6,
+      vy:(Math.random()-.5)*6,
+      life:.36+Math.random()*.14,
+      maxLife:.56,
+      col:i%2===0?'#ffffff':'#b7f7ff',
+      kind:'crystalShimmer',
+      shape:'core',
+      tw:Math.random()*Math.PI*2,
+      size:1.8+Math.random()*1.0,
+      grav:-14,
+      drag:.995
     });
   }
 }
@@ -597,7 +644,9 @@ function update(dt){
  }
 
  for(const q of particles){
-   q.x+=q.vx*dt; q.y+=q.vy*dt; q.life-=dt; q.vy+=400*dt;
+   q.x+=q.vx*dt; q.y+=q.vy*dt; q.life-=dt;
+   q.vx *= (q.drag||1);
+   q.vy += (q.grav===undefined?400:q.grav)*dt;
  }
  particles=particles.filter(q=>q.life>0);
 
@@ -749,7 +798,7 @@ function drawGalaxyThorn(h,t){
 
 
 function drawRingedPlanet(h,t,variant='normal'){
-  // V69: Saturn readability/fidelity correction. Less bubbly surface read, more broken crust and debris chunks.
+  // V76: richer planetary texture pass — same silhouettes, more material richness and surface history.
   const phase=t*.005+h.x*.012;
   const pulse=.5+.5*Math.sin(phase*1.8);
   const bob=Math.sin(phase)*1.0;
@@ -772,6 +821,7 @@ function drawRingedPlanet(h,t,variant='normal'){
   const crustA=hot?'#ad3fc6':'#6432ad';
   const crustB=hot?'#383081':'#351a66';
   const crustC=hot?'#45baff':'#8b57df';
+  const crustD=hot?'#ff7fe7':'#c7a0ff';
   const chipHi=hot?'#7ddfff':'#d8a8ff';
   const chipLo=hot?'#7635aa':'#6d45b5';
 
@@ -805,6 +855,7 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.fillStyle=g;
   ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();
 
+  // soft top-light and lower shadow to sell the sphere
   ctx.globalAlpha=.34;
   ctx.strokeStyle=hot?'#b9f2ff':'#e4bdff'; ctx.lineWidth=2.1;
   ctx.beginPath();ctx.arc(-2,-2,19.6,3.9,5.55);ctx.stroke();
@@ -813,14 +864,21 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.beginPath();ctx.arc(2,3,19.5,.7,2.3);ctx.stroke();
   ctx.globalAlpha=1;
 
-  // angular crust plates / broken shell chunks instead of bubbly circles
-  function chip(points, fill){
+  function chip(points, fill, alpha=1){
+    ctx.globalAlpha*=alpha;
     ctx.fillStyle=fill;
     ctx.beginPath();
     ctx.moveTo(points[0][0],points[0][1]);
     for(let i=1;i<points.length;i++) ctx.lineTo(points[i][0],points[i][1]);
     ctx.closePath();ctx.fill();
+    ctx.globalAlpha/=alpha;
   }
+  function scratch(x1,y1,x2,y2,col,w=1){
+    ctx.strokeStyle=col; ctx.lineWidth=w;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  }
+
+  // major crust plates
   chip([[-14,-10],[-8,-13],[-4,-9],[-7,-4],[-12,-5]], crustA);
   chip([[2,-13],[8,-12],[10,-7],[6,-4],[0,-6],[-1,-10]], crustA);
   chip([[-12,1],[-7,-1],[-4,2],[-6,7],[-11,6],[-13,3]], crustA);
@@ -829,16 +887,35 @@ function drawRingedPlanet(h,t,variant='normal'){
   chip([[-5,3],[3,2],[6,6],[1,10],[-6,8],[-8,5]], crustB);
   chip([[5,-1],[9,-2],[11,1],[8,3],[4,2]], crustB);
 
-  // edge highlights on shell chunks
-  ctx.globalAlpha=.28;
-  chip([[-14,-10],[-8,-13],[-6,-11],[-10,-8]], crustC);
-  chip([[2,-13],[8,-12],[7,-10],[1,-11]], crustC);
-  chip([[8,4],[14,4],[13,6],[9,6]], crustC);
-  ctx.globalAlpha=1;
+  // secondary texture plates
+  chip([[-2,-15],[2,-14],[3,-12],[-1,-11],[-4,-12]], crustC,.85);
+  chip([[-16,-1],[-13,-2],[-11,1],[-14,2]], crustC,.82);
+  chip([[11,11],[14,10],[13,13],[10,14],[9,12]], crustC,.8);
+  chip([[-1,11],[3,10],[5,13],[1,14],[-2,13]], crustB,.72);
 
-  // smaller debris flecks on surface
+  // edge highlights and spec chips
+  chip([[-14,-10],[-8,-13],[-6,-11],[-10,-8]], crustC,.85);
+  chip([[2,-13],[8,-12],[7,-10],[1,-11]], crustC,.85);
+  chip([[8,4],[14,4],[13,6],[9,6]], crustC,.82);
+  chip([[10,-10],[12,-9],[11,-6],[8,-7]], crustD,.55);
+  chip([[-4,4],[1,3],[2,5],[-3,6]], crustD,.42);
+
+  // tiny surface specks and micro-craters
   ctx.fillStyle=chipLo;
   ctx.fillRect(-2,-1,1,1);ctx.fillRect(4,9,1,1);ctx.fillRect(-13,3,1,1);ctx.fillRect(10,3,1,1);ctx.fillRect(-9,-2,1,1);
+  ctx.fillRect(3,-8,1,1);ctx.fillRect(-6,10,1,1);ctx.fillRect(12,-1,1,1);
+  ctx.globalAlpha=.42;
+  ctx.fillStyle=hot?'#2f225f':'#28184d';
+  ctx.fillRect(-11,-6,2,1);ctx.fillRect(6,1,1,1);ctx.fillRect(-1,7,1,1);
+  ctx.globalAlpha=1;
+
+  // contour scratches that imply surface history
+  ctx.globalAlpha=.30;
+  scratch(-10,-5,-7,-3,hot?'#ff9af0':'#ddb8ff',1);
+  scratch(1,-9,5,-8,hot?'#9befff':'#cdaeff',1);
+  scratch(7,6,10,8,hot?'#ffb0f4':'#e7caff',1);
+  scratch(-6,5,-2,7,hot?'#84e7ff':'#bf9bff',1);
+  ctx.globalAlpha=1;
 
   // glowing crack network
   ctx.strokeStyle=crackMain; ctx.lineWidth=2.4;
@@ -856,6 +933,7 @@ function drawRingedPlanet(h,t,variant='normal'){
 
   ctx.fillStyle=crackCore;
   ctx.fillRect(1,-6,2,2);ctx.fillRect(-3,-12,2,2);ctx.fillRect(6,7,2,2);ctx.fillRect(-10,4,1,1);ctx.fillRect(9,11,1,1);
+  ctx.fillRect(11,-4,1,1);ctx.fillRect(-1,13,1,1);
 
   if(hot){
     ctx.globalAlpha=.18+.12*pulse;
@@ -876,10 +954,11 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.beginPath();ctx.ellipse(0,0,21,5.1,0,0,Math.PI);ctx.stroke();
   ctx.globalAlpha=1;
 
-  // ring debris / broken chunks instead of soft bubble accents
-  chip([[-23,1],[-19,0],[-17,2],[-20,4],[-24,3]], chipHi);
-  chip([[13,-4],[17,-5],[18,-2],[15,0],[12,-1]], chipHi);
-  chip([[19,0],[22,1],[21,3],[18,3],[17,1]], chipLo);
+  // ring debris / broken chunks
+  chip([[-23,1],[-19,0],[-17,2],[-20,4],[-24,3]], chipHi,.9);
+  chip([[13,-4],[17,-5],[18,-2],[15,0],[12,-1]], chipHi,.9);
+  chip([[19,0],[22,1],[21,3],[18,3],[17,1]], chipLo,.9);
+  chip([[-8,1],[-6,0],[-4,1],[-5,3],[-8,3]], ringLow,.45);
   ctx.restore();
 
   if(heavy){
@@ -888,24 +967,25 @@ function drawRingedPlanet(h,t,variant='normal'){
     ctx.moveTo(-18,-2);ctx.lineTo(-9,0);ctx.lineTo(-5,7);ctx.lineTo(-1,13);
     ctx.moveTo(13,-15);ctx.lineTo(9,-9);ctx.lineTo(12,-2);ctx.lineTo(18,2);
     ctx.stroke();
-    // a few hot fracture shards to emphasize this as the rougher variant
-    ctx.fillStyle='#ffd872';
-    chip([[-6,-14],[-2,-13],[-1,-10],[-5,-9],[-7,-11]], '#ff86eb');
-    chip([[11,10],[15,9],[16,12],[12,14],[9,12]], '#67d9ff');
+    chip([[-6,-14],[-2,-13],[-1,-10],[-5,-9],[-7,-11]], '#ff86eb',.9);
+    chip([[11,10],[15,9],[16,12],[12,14],[9,12]], '#67d9ff',.9);
     ctx.globalAlpha=.16+.12*pulse;
     ctx.fillStyle='#ff55d4';
     ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;
   }
 
+  // ambient glints
   ctx.globalAlpha=.56+.26*pulse;
   ctx.fillStyle=hot?'#7deaff':'#ff9acb';
   ctx.fillRect(-25,-7,2,2);ctx.fillRect(24,5,2,2);ctx.fillRect(18,-15,1,1);ctx.fillRect(-18,12,1,1);ctx.fillRect(-4,-18,1,1);
+  ctx.fillStyle=hot?'#ffffff':'#ffd7fb';
+  ctx.fillRect(6,-15,1,1);ctx.fillRect(-15,8,1,1);
   ctx.globalAlpha=1;
   ctx.restore();
 }
 
-// V69 readability correction pass: Cosmic Core loses the gold ring for better differentiation, and Saturn surfaces lean into debris/chunk texture over bubbly reads.
+// V76 presentation pass: crystal collect shimmer upgraded into a glorious jewel reward, and Saturn/debris texture pushed closer to the concept art.
 
 function drawVoidStalker(h,t){
   // V64: polished biomech pass—extra shell plating, visor depth, and cleaner silhouette texture.
@@ -2182,9 +2262,11 @@ function draw(){
      ctx.fillStyle='rgba(255,255,255,.45)';
      ctx.fillRect(-d.size*.45,-d.size*.18,d.size*.45,2);
    } else {
-     // V71: Ringed Planet / table debris should read as broken stone, not bubbles.
-     // Chunky angular 16-bit rubble with one lit face and one dark chipped face.
+     // V76: Ringed Planet / table debris gets more material texture and faceting.
      const s=d.size;
+     const hi=d.marsVariant==='heavy'?'rgba(126,236,255,.82)':'rgba(220,182,255,.76)';
+     const mid=d.marsVariant==='heavy'?'rgba(255,110,232,.28)':'rgba(176,110,255,.22)';
+     const shadow=d.marsVariant==='heavy'?'rgba(69,26,111,.50)':'rgba(36,20,55,.47)';
      ctx.beginPath();
      ctx.moveTo(-s*.78,-s*.28);
      ctx.lineTo(-s*.24,-s*.78);
@@ -2196,8 +2278,8 @@ function draw(){
      ctx.closePath();
      ctx.fill();
 
-     // bright broken edge
-     ctx.fillStyle=d.marsVariant==='heavy'?'rgba(126,236,255,.78)':'rgba(220,182,255,.70)';
+     // bright top face
+     ctx.fillStyle=hi;
      ctx.beginPath();
      ctx.moveTo(-s*.58,-s*.26);
      ctx.lineTo(-s*.18,-s*.60);
@@ -2206,8 +2288,18 @@ function draw(){
      ctx.closePath();
      ctx.fill();
 
+     // mid facet gives the shard more volume
+     ctx.fillStyle=mid;
+     ctx.beginPath();
+     ctx.moveTo(-s*.10,-s*.12);
+     ctx.lineTo(s*.34,-s*.06);
+     ctx.lineTo(s*.18,s*.18);
+     ctx.lineTo(-s*.18,s*.12);
+     ctx.closePath();
+     ctx.fill();
+
      // dark chipped underside
-     ctx.fillStyle=d.marsVariant==='heavy'?'rgba(69,26,111,.48)':'rgba(36,20,55,.45)';
+     ctx.fillStyle=shadow;
      ctx.beginPath();
      ctx.moveTo(-s*.42,s*.14);
      ctx.lineTo(s*.58,s*.02);
@@ -2216,9 +2308,15 @@ function draw(){
      ctx.closePath();
      ctx.fill();
 
-     // tiny pixel fracture mark
-     ctx.fillStyle=d.marsVariant==='heavy'?'rgba(255,155,235,.78)':'rgba(255,244,208,.7)';
+     // little contour scratch and spec pixel
+     ctx.strokeStyle='rgba(255,255,255,.24)';
+     ctx.lineWidth=Math.max(.9,s*.06);
+     ctx.beginPath();
+     ctx.moveTo(-s*.12,-s*.02);ctx.lineTo(s*.18,s*.08);ctx.stroke();
+     ctx.fillStyle=d.marsVariant==='heavy'?'rgba(255,155,235,.82)':'rgba(255,244,208,.74)';
      ctx.fillRect(-1,-1,2,1);
+     ctx.fillStyle='rgba(0,0,0,.18)';
+     ctx.fillRect(1,1,1,1);
    }
    ctx.restore();
  }
@@ -2233,9 +2331,30 @@ function draw(){
    if(q.kind==='crystalShimmer'){
      const tw=0.65+0.35*Math.sin((performance.now()*.018)+(q.tw||0));
      const s=(q.size||2)*tw;
-     ctx.fillRect(px-s*.5,py-s*.5,s,s);
-     ctx.fillRect(px-4*tw,py-.7,8*tw,1.4);
-     ctx.fillRect(px-.7,py-4*tw,1.4,8*tw);
+     if(q.shape==='diamond'){
+       ctx.beginPath();
+       ctx.moveTo(px,py-s*.95);
+       ctx.lineTo(px+s*.7,py);
+       ctx.lineTo(px,py+s*.95);
+       ctx.lineTo(px-s*.7,py);
+       ctx.closePath();
+       ctx.fill();
+       ctx.globalAlpha=a*.62;
+       ctx.fillStyle='#ffffff';
+       ctx.fillRect(px-.5,py-s*.35,1,s*.45);
+       ctx.globalAlpha=a;
+       ctx.fillStyle=q.col;
+     }else if(q.shape==='core'){
+       ctx.fillRect(px-s*.45,py-s*.45,s*.9,s*.9);
+       ctx.fillRect(px-2.4*tw,py-.5,4.8*tw,1);
+       ctx.fillRect(px-.5,py-2.4*tw,1,4.8*tw);
+     }else{
+       ctx.fillRect(px-s*.5,py-s*.5,s,s);
+       ctx.fillRect(px-4.6*tw,py-.7,9.2*tw,1.4);
+       ctx.fillRect(px-.7,py-4.6*tw,1.4,9.2*tw);
+       ctx.fillRect(px-2.2*tw,py-2.2*tw,1.2,1.2);
+       ctx.fillRect(px+1.0*tw,py+1.0*tw,1.2,1.2);
+     }
    } else {
      ctx.fillRect(px,py,5,5);
      if(q.life>.28){
