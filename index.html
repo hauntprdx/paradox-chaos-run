@@ -798,7 +798,7 @@ function drawGalaxyThorn(h,t){
 
 
 function drawRingedPlanet(h,t,variant='normal'){
-  // V76: richer planetary texture pass — same silhouettes, more material richness and surface history.
+  // V77: final shading/material polish for Saturns — same forms, richer light and deeper material read.
   const phase=t*.005+h.x*.012;
   const pulse=.5+.5*Math.sin(phase*1.8);
   const bob=Math.sin(phase)*1.0;
@@ -824,12 +824,15 @@ function drawRingedPlanet(h,t,variant='normal'){
   const crustD=hot?'#ff7fe7':'#c7a0ff';
   const chipHi=hot?'#7ddfff':'#d8a8ff';
   const chipLo=hot?'#7635aa':'#6d45b5';
+  const deepShade=hot?'rgba(22,20,58,.52)':'rgba(18,12,44,.50)';
+  const plateShade=hot?'rgba(31,20,77,.34)':'rgba(24,14,58,.34)';
 
   ctx.globalAlpha=.15+.10*pulse;
   ctx.fillStyle=hot?'#ff63dc':'#b983ff';
   ctx.beginPath();ctx.arc(0,0,25.5,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
+  // back ring system
   ctx.save();
   ctx.rotate(-.16);
   ctx.strokeStyle=ringMain; ctx.lineWidth=4.2;
@@ -847,6 +850,7 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.globalAlpha=1;
   ctx.restore();
 
+  // sphere base
   const g=ctx.createRadialGradient(-7,-8,3,0,0,25);
   g.addColorStop(0,hot?'#ff86e9':'#c18bff');
   g.addColorStop(.28,hot?'#ca4bf3':'#8a49de');
@@ -855,37 +859,78 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.fillStyle=g;
   ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();
 
-  // soft top-light and lower shadow to sell the sphere
+  // directional sphere shading for better roundness
+  ctx.save();
+  ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.clip();
+  let grd=ctx.createLinearGradient(-18,-16,18,18);
+  grd.addColorStop(0,'rgba(255,255,255,.16)');
+  grd.addColorStop(.36,'rgba(255,255,255,.02)');
+  grd.addColorStop(.68,'rgba(30,18,60,.10)');
+  grd.addColorStop(1,deepShade);
+  ctx.fillStyle=grd;
+  ctx.fillRect(-24,-24,48,48);
+
+  // lower-right ambient occlusion cap
+  const oc=ctx.createRadialGradient(7,8,2,8,9,18);
+  oc.addColorStop(0,'rgba(0,0,0,0)');
+  oc.addColorStop(.65,'rgba(0,0,0,.10)');
+  oc.addColorStop(1,deepShade);
+  ctx.fillStyle=oc;
+  ctx.fillRect(-24,-24,48,48);
+
+  // subtle top-left bloom
+  const bloom=ctx.createRadialGradient(-10,-11,1,-10,-11,16);
+  bloom.addColorStop(0,hot?'rgba(255,196,247,.18)':'rgba(247,214,255,.18)');
+  bloom.addColorStop(.6,'rgba(255,255,255,.04)');
+  bloom.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=bloom;
+  ctx.fillRect(-24,-24,48,48);
+  ctx.restore();
+
+  // soft top-light and lower shadow rim
   ctx.globalAlpha=.34;
   ctx.strokeStyle=hot?'#b9f2ff':'#e4bdff'; ctx.lineWidth=2.1;
   ctx.beginPath();ctx.arc(-2,-2,19.6,3.9,5.55);ctx.stroke();
-  ctx.globalAlpha=.14;
-  ctx.strokeStyle='#000000'; ctx.lineWidth=2.4;
+  ctx.globalAlpha=.18;
+  ctx.strokeStyle='#000000'; ctx.lineWidth=2.6;
   ctx.beginPath();ctx.arc(2,3,19.5,.7,2.3);ctx.stroke();
   ctx.globalAlpha=1;
 
   function chip(points, fill, alpha=1){
-    ctx.globalAlpha*=alpha;
+    const old=ctx.globalAlpha;
+    ctx.globalAlpha=old*alpha;
     ctx.fillStyle=fill;
     ctx.beginPath();
     ctx.moveTo(points[0][0],points[0][1]);
     for(let i=1;i<points.length;i++) ctx.lineTo(points[i][0],points[i][1]);
     ctx.closePath();ctx.fill();
-    ctx.globalAlpha/=alpha;
+    ctx.globalAlpha=old;
+  }
+  function shadowChip(points, fill, ox=1.1, oy=1.2, alpha=.85){
+    const sh=points.map(([x,y])=>[x+ox,y+oy]);
+    chip(sh,fill,alpha);
   }
   function scratch(x1,y1,x2,y2,col,w=1){
     ctx.strokeStyle=col; ctx.lineWidth=w;
     ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
   }
 
+  const majorPlates=[
+    [[-14,-10],[-8,-13],[-4,-9],[-7,-4],[-12,-5]],
+    [[2,-13],[8,-12],[10,-7],[6,-4],[0,-6],[-1,-10]],
+    [[-12,1],[-7,-1],[-4,2],[-6,7],[-11,6],[-13,3]],
+    [[8,4],[14,4],[15,9],[10,11],[6,8]],
+    [[10,-10],[14,-8],[13,-3],[9,-2],[7,-6]],
+    [[-5,3],[3,2],[6,6],[1,10],[-6,8],[-8,5]],
+    [[5,-1],[9,-2],[11,1],[8,3],[4,2]]
+  ];
+  const majorCols=[crustA,crustA,crustA,crustA,crustB,crustB,crustB];
+
+  // plate occlusion first
+  for(let i=0;i<majorPlates.length;i++) shadowChip(majorPlates[i], plateShade, 1.0, 1.2, .82);
+
   // major crust plates
-  chip([[-14,-10],[-8,-13],[-4,-9],[-7,-4],[-12,-5]], crustA);
-  chip([[2,-13],[8,-12],[10,-7],[6,-4],[0,-6],[-1,-10]], crustA);
-  chip([[-12,1],[-7,-1],[-4,2],[-6,7],[-11,6],[-13,3]], crustA);
-  chip([[8,4],[14,4],[15,9],[10,11],[6,8]], crustA);
-  chip([[10,-10],[14,-8],[13,-3],[9,-2],[7,-6]], crustB);
-  chip([[-5,3],[3,2],[6,6],[1,10],[-6,8],[-8,5]], crustB);
-  chip([[5,-1],[9,-2],[11,1],[8,3],[4,2]], crustB);
+  for(let i=0;i<majorPlates.length;i++) chip(majorPlates[i], majorCols[i]);
 
   // secondary texture plates
   chip([[-2,-15],[2,-14],[3,-12],[-1,-11],[-4,-12]], crustC,.85);
@@ -942,6 +987,7 @@ function drawRingedPlanet(h,t,variant='normal'){
     ctx.globalAlpha=1;
   }
 
+  // front ring system
   ctx.save();
   ctx.rotate(-.16);
   ctx.strokeStyle=ringMain; ctx.lineWidth=4.2;
@@ -953,8 +999,6 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.beginPath();ctx.ellipse(0,0,27,7.8,0,0,Math.PI);ctx.stroke();
   ctx.beginPath();ctx.ellipse(0,0,21,5.1,0,0,Math.PI);ctx.stroke();
   ctx.globalAlpha=1;
-
-  // ring debris / broken chunks
   chip([[-23,1],[-19,0],[-17,2],[-20,4],[-24,3]], chipHi,.9);
   chip([[13,-4],[17,-5],[18,-2],[15,0],[12,-1]], chipHi,.9);
   chip([[19,0],[22,1],[21,3],[18,3],[17,1]], chipLo,.9);
@@ -985,7 +1029,7 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.restore();
 }
 
-// V76 presentation pass: crystal collect shimmer upgraded into a glorious jewel reward, and Saturn/debris texture pushed closer to the concept art.
+// V77 final shading pass: Saturns and debris keep the V76 art direction but gain richer light/shadow depth and material feel.
 
 function drawVoidStalker(h,t){
   // V64: polished biomech pass—extra shell plating, visor depth, and cleaner silhouette texture.
@@ -2262,11 +2306,12 @@ function draw(){
      ctx.fillStyle='rgba(255,255,255,.45)';
      ctx.fillRect(-d.size*.45,-d.size*.18,d.size*.45,2);
    } else {
-     // V76: Ringed Planet / table debris gets more material texture and faceting.
+     // V77: Ringed Planet / table debris gets a stronger light-face / mid-face / shadow-face read.
      const s=d.size;
-     const hi=d.marsVariant==='heavy'?'rgba(126,236,255,.82)':'rgba(220,182,255,.76)';
-     const mid=d.marsVariant==='heavy'?'rgba(255,110,232,.28)':'rgba(176,110,255,.22)';
-     const shadow=d.marsVariant==='heavy'?'rgba(69,26,111,.50)':'rgba(36,20,55,.47)';
+     const hi=d.marsVariant==='heavy'?'rgba(126,236,255,.86)':'rgba(226,191,255,.80)';
+     const mid=d.marsVariant==='heavy'?'rgba(255,110,232,.34)':'rgba(180,114,255,.28)';
+     const shadow=d.marsVariant==='heavy'?'rgba(69,26,111,.56)':'rgba(36,20,55,.54)';
+     const deep=d.marsVariant==='heavy'?'rgba(28,12,48,.30)':'rgba(18,10,40,.28)';
      ctx.beginPath();
      ctx.moveTo(-s*.78,-s*.28);
      ctx.lineTo(-s*.24,-s*.78);
@@ -2275,6 +2320,16 @@ function draw(){
      ctx.lineTo(s*.38,s*.68);
      ctx.lineTo(-s*.42,s*.60);
      ctx.lineTo(-s*.82,s*.18);
+     ctx.closePath();
+     ctx.fill();
+
+     // subtle cast shadow inside the shard for more weight
+     ctx.fillStyle=deep;
+     ctx.beginPath();
+     ctx.moveTo(-s*.18,-s*.04);
+     ctx.lineTo(s*.48,-s*.02);
+     ctx.lineTo(s*.26,s*.42);
+     ctx.lineTo(-s*.26,s*.30);
      ctx.closePath();
      ctx.fill();
 
@@ -2308,14 +2363,14 @@ function draw(){
      ctx.closePath();
      ctx.fill();
 
-     // little contour scratch and spec pixel
-     ctx.strokeStyle='rgba(255,255,255,.24)';
+     // rim scratch + tiny spec pixels
+     ctx.strokeStyle='rgba(255,255,255,.26)';
      ctx.lineWidth=Math.max(.9,s*.06);
      ctx.beginPath();
      ctx.moveTo(-s*.12,-s*.02);ctx.lineTo(s*.18,s*.08);ctx.stroke();
-     ctx.fillStyle=d.marsVariant==='heavy'?'rgba(255,155,235,.82)':'rgba(255,244,208,.74)';
+     ctx.fillStyle=d.marsVariant==='heavy'?'rgba(255,155,235,.84)':'rgba(255,244,208,.76)';
      ctx.fillRect(-1,-1,2,1);
-     ctx.fillStyle='rgba(0,0,0,.18)';
+     ctx.fillStyle='rgba(0,0,0,.24)';
      ctx.fillRect(1,1,1,1);
    }
    ctx.restore();
