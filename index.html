@@ -693,110 +693,91 @@ function updateDeath(dt){
 
 
 function drawGalaxyThorn(h,t){
-  // V64: subtle extra finish—slime glints, richer base, and slightly more cohesive wet texture.
-  const phase=t*.006+h.x*.018;
-  const frame=Math.floor((t/110)%4);
-  const cycle=[0,1,2,1][frame];
-  const sway=Math.sin(phase)*4 + (cycle===1?1:cycle===2?2:0);
-  const twitch=Math.max(0,Math.sin(phase*2.7))*2.1 + (cycle===2?1.2:0);
+  // V83: rooted Thorn Maw, four authored silhouette cells.
+  const poses=[
+    {rise:0,reach:0,curl:0,spread:0,glow:.35},
+    {rise:3,reach:3,curl:-2,spread:2,glow:.50},
+    {rise:7,reach:7,curl:-4,spread:3,glow:.78},
+    {rise:-3,reach:-3,curl:3,spread:-2,glow:.45}
+  ];
+  const seq=[0,1,2,3,2,1];
+  const frame=seq[Math.floor((t+h.x*11)/175)%6];
+  const p=poses[frame];
   ctx.save();
   ctx.translate(0,3);
-
-  const baseGlow=ctx.createRadialGradient(0,5,2,0,5,30);
-  baseGlow.addColorStop(0,'rgba(238,108,255,.34)');
-  baseGlow.addColorStop(.6,'rgba(118,34,150,.18)');
-  baseGlow.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=baseGlow;
-  ctx.beginPath();ctx.ellipse(0,7,31,11,0,0,Math.PI*2);ctx.fill();
-
-  ctx.fillStyle='#2a0a35';
-  ctx.beginPath();ctx.ellipse(0,8,28,8,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#6a207f';
-  ctx.fillRect(-23,4,10,5);ctx.fillRect(3,3,12,5);
-  ctx.fillStyle='#b347d2';
-  ctx.fillRect(-9,5,4,2);ctx.fillRect(8,6,4,2);
-  ctx.fillStyle='rgba(255,190,255,.16)';
-  ctx.fillRect(-4,6,8,1);
-
-  for(let i=-2;i<=2;i++){
-    const ox=i*11;
-    const ht=15+(Math.abs(i)%2)*5+(i===0?11:0)+(cycle===2&&i===0?2:0);
-    const local=sway*(1-Math.abs(i)*.12)+(i%2?twitch:-twitch);
-    const midX=ox+local*.32;
-    const midY=-ht*.48;
-
-    ctx.strokeStyle='#4a135f';ctx.lineWidth=9;
-    ctx.beginPath();
-    ctx.moveTo(ox,8);
-    ctx.quadraticCurveTo(midX,midY,ox+local,-ht);
-    ctx.stroke();
-
-    ctx.strokeStyle='#2a0d35';ctx.lineWidth=4;
-    ctx.beginPath();
-    ctx.moveTo(ox-1,8);
-    ctx.quadraticCurveTo(midX-2,midY+2,ox+local-2,-ht+1);
-    ctx.stroke();
-
-    ctx.strokeStyle='#d86bf1';ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(ox+2,5);
-    ctx.quadraticCurveTo(ox+local*.42,-ht*.46,ox+local+1,-ht+2);
-    ctx.stroke();
-
-    ctx.fillStyle='#7f2aa5';
-    ctx.beginPath();ctx.arc(ox+local*.22,-ht*.25,2.1,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(ox+local*.55,-ht*.55,1.5,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#ee8cff';
-    ctx.fillRect(Math.round(ox+local*.2)-1,Math.round(-ht*.25)-1,1,1);
-    ctx.fillRect(Math.round(ox+local*.48)-1,Math.round(-ht*.52)-1,1,1);
-
-    ctx.fillStyle='#ffd0ff';
-    ctx.beginPath();
-    ctx.moveTo(ox+local-3,-ht+2);
-    ctx.lineTo(ox+local,-ht-6);
-    ctx.lineTo(ox+local+3,-ht+2);
-    ctx.closePath();
-    ctx.fill();
-
-    if(i===0 || Math.abs(i)===2){
-      ctx.strokeStyle='#e59bff';ctx.lineWidth=1.5;
-      ctx.beginPath();
-      ctx.moveTo(ox+local+1,-ht+1);
-      ctx.lineTo(ox+local+1,-ht+5+(cycle===1?1:0));
-      ctx.stroke();
-      ctx.fillStyle='#f2b1ff';
-      ctx.beginPath();ctx.arc(ox+local+1,-ht+7+(cycle===1?1:0),1.7,0,Math.PI*2);ctx.fill();
-    }
-
-    if(i!==0){
-      ctx.fillStyle='#9e3ec4';
-      ctx.beginPath();
-      ctx.moveTo(ox+local*.55,-ht*.52);
-      ctx.lineTo(ox+local*.55+(i<0?-5:5),-ht*.62);
-      ctx.lineTo(ox+local*.55,-ht*.42);
-      ctx.closePath();
-      ctx.fill();
-    }
+  function line(points,color,width){
+    ctx.beginPath();ctx.moveTo(points[0],points[1]);
+    ctx.bezierCurveTo(points[2],points[3],points[4],points[5],points[6],points[7]);
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.stroke();
   }
-
-  ctx.fillStyle='#8e31b6';
-  ctx.beginPath();ctx.arc(-6,4,3.5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(7,3,4,0,Math.PI*2);ctx.fill();
-  const mawCore=ctx.createRadialGradient(0,2,1,0,2,8);
-  mawCore.addColorStop(0,'#ffe8ff');
-  mawCore.addColorStop(.45,'#f485ff');
-  mawCore.addColorStop(1,'#722596');
-  ctx.fillStyle=mawCore;
-  ctx.beginPath();ctx.arc(0,2,6.5,0,Math.PI*2);ctx.fill();
-
-  ctx.globalAlpha=.22+.14*Math.sin(phase*1.4);
-  ctx.fillStyle='#d980ff';
-  ctx.fillRect(-15,-8,1,1);ctx.fillRect(14,-5,1,1);ctx.fillRect(2,-18,1,1);
-  ctx.globalAlpha=1;
+  function flesh(x,y,cx,cy,ex,ey,tx,ty,w){
+    line([x,y,cx,cy,ex,ey,tx,ty],'#1b071f',w+3);
+    line([x,y,cx,cy,ex,ey,tx,ty],'#63203e',w);
+    line([x-1,y-1,cx-1,cy-1,ex-1,ey-1,tx-1,ty-1],'#aa3a75',Math.max(2,w*.42));
+    line([x-2,y-2,cx-2,cy-2,ex-2,ey-2,tx-2,ty-2],'#e66fa8',1.15);
+    ctx.fillStyle='#ffd1d9';ctx.beginPath();
+    ctx.moveTo(tx-w*.4,ty+1);ctx.lineTo(tx+2,ty-6);ctx.lineTo(tx+w*.38,ty+2);ctx.closePath();ctx.fill();
+  }
+  // Ground contact and gripping roots: all stationary across the cycle.
+  ctx.fillStyle='rgba(8,0,14,.78)';
+  ctx.beginPath();ctx.ellipse(0,9,32,6,0,0,Math.PI*2);ctx.fill();
+  const roots=[
+    [-7,6,-15,8,-20,11,-30,9],
+    [7,6,17,8,21,10,29,8],
+    [-3,8,-11,13,-17,16,-20,20],
+    [5,8,12,13,17,16,18,20],
+    [-13,6,-23,5,-26,4,-31,5],
+    [12,6,22,5,27,4,32,5]
+  ];
+  for(let i=0;i<roots.length;i++){
+    line(roots[i],'#210a28',6);
+    line(roots[i],'#753052',3.2);
+    line(roots[i],'#c25b91',.85);
+  }
+  // Root claws hang over the platform lip.
+  ctx.strokeStyle='#a74883';ctx.lineWidth=2;
+  for(const x of [-19,-9,12,22]){
+    ctx.beginPath();ctx.moveTo(x,10);ctx.quadraticCurveTo(x+2,15,x-1,19);ctx.stroke();
+  }
+  // Tiny background tendrils: minimal movement, never outact the hero.
+  const micro=Math.sin(t*.002+h.x*.01)*.6;
+  flesh(-12,5,-19,-3,-24,-6,-25+micro,-11,4);
+  flesh(13,5,20,-2,23,-5,25-micro,-10,4);
+  // Support arms move just a fraction of the hero.
+  flesh(-9,5,-22,-2,-26,-13,-19-p.spread*.6,-20-p.rise*.23,7);
+  flesh(9,5,21,-2,27,-13,21+p.spread*.5,-19-p.rise*.18,7);
+  // Hero tentacle: unmistakable C-hook, dominant in all four poses.
+  const hx=5+p.reach,hy=-34-p.rise;
+  flesh(0,5,-8,-13,0+p.curl,-38-p.rise,hx,hy,11);
+  // Inner ribbing and plated thorn barbs along the hero arm.
+  ctx.strokeStyle='#35102e';ctx.lineWidth=2.2;
+  for(let i=0;i<4;i++){
+    const y=-4-i*6;
+    ctx.beginPath();ctx.moveTo(-5-i*.25,y);ctx.lineTo(1+i*.45,y-2);ctx.stroke();
+  }
+  ctx.fillStyle='#ed9abb';
+  for(const [x,y] of [[-8,-8],[-8,-15],[-6,-22],[-2,-28]]){
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-5,y-4);ctx.lineTo(x-2,y+3);ctx.closePath();ctx.fill();
+  }
+  // Heavy, wet base mound and central containment eye.
+  const base=ctx.createLinearGradient(0,-5,0,11);
+  base.addColorStop(0,'#8b356c');base.addColorStop(.5,'#491735');base.addColorStop(1,'#1b071d');
+  ctx.fillStyle=base;ctx.beginPath();
+  ctx.moveTo(-19,9);ctx.bezierCurveTo(-14,-2,-7,-3,0,-2);
+  ctx.bezierCurveTo(8,-5,17,1,20,9);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#b34d86';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(-13,5);ctx.quadraticCurveTo(-5,0,-2,2);ctx.moveTo(6,1);ctx.quadraticCurveTo(14,2,17,6);ctx.stroke();
+  ctx.fillStyle='#230b2a';ctx.beginPath();ctx.ellipse(0,4,8,6,0,0,Math.PI*2);ctx.fill();
+  const g=ctx.createRadialGradient(-1,3,0,0,4,6);
+  g.addColorStop(0,`rgba(255,227,255,${p.glow})`);
+  g.addColorStop(.4,`rgba(242,104,255,${p.glow})`);
+  g.addColorStop(1,'rgba(103,29,135,.7)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,4,5,4,0,0,Math.PI*2);ctx.fill();
+  // Wet specular flecks, no flashing or full-screen effects.
+  ctx.fillStyle='#e780b2';
+  ctx.fillRect(-14,4,2,1);ctx.fillRect(11,5,2,1);ctx.fillRect(-5,-8,1,2);
   ctx.restore();
 }
-
-
 function drawRingedPlanet(h,t,variant='normal'){
   // V77: final shading/material polish for Saturns — same forms, richer light and deeper material read.
   const phase=t*.005+h.x*.012;
