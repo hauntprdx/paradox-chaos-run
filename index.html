@@ -417,26 +417,29 @@ function ensureWorld(){
      const w=320+Math.random()*360;
      const p={x:lastP.x+lastP.w+gap,y,w,h:45,route:'main'};
      platforms.push(p);
+     // V97: Thorn Maw showcase. Reserve its platform position BEFORE adding
+     // ordinary hazards, so a competing spawn cannot silently veto it.
+     // First appearance after 450 points; repeat on eligible calm platforms
+     // at roughly 1,300-point intervals. Collision sizes stay unchanged.
+     const spikeDue = score>=450 && (score-lastSpikeScore>=1300);
+     const spikeRoll = score>=450 && Math.random()<.16;
+     const placeThorn = w>410 && (spikeDue || spikeRoll);
+     const thornPos=.40+Math.random()*.20;
+     if(placeThorn){
+       addHazardOnPlatform(p,'spike',thornPos);
+       lastSpikeScore=score;
+     }
+     // Other hazards may appear only when their center is comfortably away
+     // from the rooted Thorn Maw. This keeps jumps fair and readable.
+     const tryOrdinary=(type,pos)=>{
+       if(placeThorn && Math.abs(pos-thornPos)*w<120)return;
+       addHazardOnPlatform(p,type,pos);
+     };
      if(Math.random()<.70){
        const r=Math.random();
-       addHazardOnPlatform(p,r<.42?'table':r<.66?'enemy':r<.84?'crystal':'table',.40+Math.random()*.25);
+       tryOrdinary(r<.42?'table':r<.66?'enemy':r<.84?'crystal':'table',.40+Math.random()*.25);
      }
-     if(w>460 && Math.random()<.30)addHazardOnPlatform(p,Math.random()<.56?'enemy':'crystal',.76);
-
-     // Sporadic cosmic thorn cluster: readable jump-only punctuation.
-     // They begin appearing early, stay uncommon, and a soft pity timer prevents
-     // a whole long run from somehow never showing one.
-     const spikeDue = score>=450 && (score-lastSpikeScore>1700);
-     const spikeRoll = score>=450 && Math.random()<.24;
-     if(w>410 && (spikeDue || spikeRoll)){
-       const spikePos=.28+Math.random()*.44;
-       const targetX=p.x+p.w*spikePos;
-       const tooClose=hazards.some(h=>h.alive && h.x>p.x && h.x<p.x+p.w && Math.abs((h.x+h.w/2)-targetX)<115);
-       if(!tooClose){
-         addHazardOnPlatform(p,'spike',spikePos);
-         lastSpikeScore=score;
-       }
-     }
+     if(w>460 && Math.random()<.30)tryOrdinary(Math.random()<.56?'enemy':'crystal',.76);
    }
 
    // Clutch jump. Hard ones should demand the double jump, but still be physically reachable.
