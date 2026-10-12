@@ -1043,6 +1043,8 @@ function buildStalkerSpriteCell(frame,elite){
   for(let i=1;i<ta.length;i++){
     const [x,y]=ta[i];polygon([[x-4,y-2],[x,y-5],[x+4,y-2],[x+3,y+2],[x-2,y+3]],i%2?white:mid);
     rect(x-1,y-3,2,1,light);
+    rect(x-3,y,2,1,i%2?'#aa8cc4':'#79638e');
+    if(i%2===0)rect(x+1,y-2,1,1,'#e6a2ff');
   }
   const tip=ta[4];rect(tip[0]-2,tip[1]-2,5,5,violet);rect(tip[0],tip[1]-1,2,2,light);
   // Hind legs are dark flexible structures, with solid shell boots.
@@ -1077,6 +1079,22 @@ function buildStalkerSpriteCell(frame,elite){
   polygon([[-1,-2],[4,-7],[9,-3],[10,2],[5,6],[0,3]],'#70238f');
   polygon([[1,-2],[5,-5],[8,-2],[8,2],[5,4],[2,2]],violet);
   rect(4,-3,3,2,'#ffe8ff');rect(3,1,2,1,'#e79cff');
+  // V91: directional pearl shell treatment, cut into the authored armor planes.
+  // The facets stay attached to the body in every cell rather than drifting FX.
+  polygon([[-20,-11],[-13,-17],[-2,-18],[-9,-14],[-17,-9]],'#fff8ff');
+  polygon([[-4,-17],[8,-18],[16,-13],[10,-12],[1,-14]],'#eee5f8');
+  polygon([[9,-10],[18,-8],[20,-3],[14,-3]],'#b6a4d0');
+  polygon([[-18,4],[-10,7],[-3,8],[-11,10]],'#75628d');
+  stroke([[-14,-13],[-6,-15],[1,-15]],'#ffffff',1.2);
+  stroke([[8,-15],[14,-12]],'#fef1ff',1.1);
+  // Inset mechanical seams, restrained to retain a smooth predatory silhouette.
+  stroke([[-11,1],[-8,5],[-2,6]],'#30223f',1.5);
+  stroke([[11,1],[14,4],[12,7]],'#352342',1.4);
+  rect(-8,3,2,1,'#a46cc4');rect(13,4,2,1,'#bb7be2');
+  // A secondary collar plate and a small luminous vent beneath the dorsal ridge.
+  polygon([[2,-13],[8,-15],[13,-11],[9,-8],[3,-9]],'#3d2a50');
+  polygon([[4,-13],[8,-14],[11,-11],[7,-10]],'#dcd0e8');
+  rect(7,-11,3,1,'#d679ff');
   g.restore();
   // Forelimbs posed per frame, anchored to the shoulder.
   const reach=[0,-1,-2,3][frame];
@@ -1100,6 +1118,16 @@ function buildStalkerSpriteCell(frame,elite){
   polygon([[-38,-8],[-25,-9],[-13,-10],[-18,-4],[-29,-2],[-39,-5]],shade);
   polygon([[-37,-7],[-27,-7],[-18,-8],[-25,-4],[-36,-5]],white);
   rect(-32,-5,7,1,light);
+  // V91: visor depth and pearlescent helmet ridges; no cartoon outlines.
+  polygon([[-39,-19],[-32,-25],[-23,-25],[-29,-22],[-37,-17]],'#fffaff');
+  polygon([[-19,-24],[-11,-20],[-8,-16],[-14,-18]],'#c6b2da');
+  polygon([[-40,-12],[-34,-15],[-25,-16],[-31,-13]],'#3b1a58');
+  stroke([[-37,-20],[-31,-24],[-24,-24]],'#ffffff',1.1);
+  stroke([[-39,-8],[-30,-6],[-23,-7]],'#e9dced',1);
+  // Faceted eye: dark inset, luminous iris and a tiny sharp specular.
+  rect(-30,-14,7,3,'#491064');
+  rect(-29,-14,4,2,elite?'#ff93ff':'#e064ff');
+  rect(-29,-14,2,1,'#fff5ff');
   // Pixel-specular edges make the painted sprite read as one consistent material.
   rect(-12,-17,5,1,light);rect(0,-18,5,1,light);rect(14,-8,4,1,light);
   g.restore();return cv;
