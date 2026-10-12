@@ -193,7 +193,7 @@ function burst(x,y,n,col){
 }
 
 function spawnDebris(x,y,type,elite=false,marsVariant=null){
-  const n = type==='crystal'?18:type==='enemy'?(elite?15:12):type==='barrier'?18:16;
+  const n = type==='crystal'?18:type==='enemy'?(elite?27:23):type==='barrier'?18:16;
   const cols = type==='crystal'
     ? ['#7ff7ff','#ff7bd5','#ffe26a','#af7cff','#ffffff','#7cffbb']
     : type==='enemy'
@@ -206,16 +206,16 @@ function spawnDebris(x,y,type,elite=false,marsVariant=null){
 
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2;
-    const sp=type==='enemy'?65+Math.random()*155:120+Math.random()*300;
+    const sp=type==='enemy'?95+Math.random()*180:120+Math.random()*300;
     debris.push({
       x,y,
       vx:Math.cos(a)*sp,
       vy:Math.sin(a)*sp-110,
-      life:type==='enemy'?.48+Math.random()*.48:.8+Math.random()*.75,
+      life:type==='enemy'?.85+Math.random()*.55:.8+Math.random()*.75,
       maxLife:1.55,
       rot:Math.random()*Math.PI*2,
       vr:(Math.random()-.5)*12,
-      size:type==='enemy'?4+Math.random()*6:5+Math.random()*10,
+      size:type==='enemy'?5+Math.random()*7:5+Math.random()*10,
       part:type==='enemy'?i%5:undefined,
       type,
       col:cols[(Math.random()*cols.length)|0],
@@ -223,6 +223,17 @@ function spawnDebris(x,y,type,elite=false,marsVariant=null){
     });
   }
 
+  // V87: small, contained energy flecks accompany recognizable carapace fragments.
+  if(type==='enemy'){
+    const sparkCols=elite?['#ffdfff','#ff86e8','#b7f7ff']:['#f3ecff','#a46cff','#8de7ff'];
+    for(let i=0;i<(elite?19:14);i++){
+      const angle=Math.random()*Math.PI*2;
+      const speed=65+Math.random()*190;
+      particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-35,
+        life:.42+Math.random()*.55,maxLife:.97,col:sparkCols[i%sparkCols.length],
+        kind:'crystalShimmer',shape:'star',tw:Math.random()*6.28,size:1.2+Math.random()*1.7});
+    }
+  }
   shockwaves.push({
     x,y,
     r:8,
@@ -1102,6 +1113,20 @@ function drawVoidStalker(h,t){
     const x=-7+i*5;
     ctx.beginPath();ctx.moveTo(x,1);ctx.lineTo(x+2,6);ctx.stroke();
   }
+
+  // V87: pearl-shaded carapace, directional light and inset shadow, not extra geometry.
+  const pearl=ctx.createLinearGradient(-6,-17,13,10);
+  pearl.addColorStop(0,'rgba(255,255,255,.38)');
+  pearl.addColorStop(.48,'rgba(214,194,233,.13)');
+  pearl.addColorStop(1,'rgba(44,23,63,.29)');
+  ctx.fillStyle=pearl;
+  ctx.beginPath();ctx.moveTo(-11,-4);ctx.lineTo(-3,-12);ctx.lineTo(13,-13);
+  ctx.lineTo(24,-8);ctx.lineTo(24,0);ctx.lineTo(14,7);ctx.lineTo(-5,7);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(255,251,255,.5)';ctx.lineWidth=.85;
+  ctx.beginPath();ctx.moveTo(-7,-6);ctx.quadraticCurveTo(6,-17,19,-10);ctx.stroke();
+  // Sparse mineral flecks embedded in shell; deliberately no uniform stripes.
+  ctx.fillStyle='rgba(255,255,255,.5)';
+  [[-5,-7],[2,-10],[11,-9],[19,-5],[-8,3]].forEach(([a,b])=>ctx.fillRect(a,b,1.4,.8));
 
   // shell plating inspired by the concept's overlapping armor
   poly([[-10,-5],[-5,-11],[3,-13],[4,-7],[-1,-2],[-8,-1]],shell2,edge,.7);
@@ -2676,15 +2701,15 @@ function drawParadox(){
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.375;
-       scaleY=1.375;
+       scaleX=1.13;
+       scaleY=1.13;
        rot=-.050;
      }else{
        frameKey='fall_01';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.255;
-       scaleY=1.255;
+       scaleX=1.10;
+       scaleY=1.10;
        rot=Math.max(-.020,Math.min(.040,P.vy/850));
      }
    }else{
@@ -2693,16 +2718,16 @@ function drawParadox(){
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.375;
-       scaleY=1.375;
+       scaleX=1.13;
+       scaleY=1.13;
        rot=-.018;
      }else if(P.vy<-220){
        // Hold the takeoff pose into early ascent so the jump visibly launches.
        frameKey='jump_takeoff';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.375;
-       scaleY=1.375;
+       scaleX=1.13;
+       scaleY=1.13;
        rot=-.045;
        poseLift=-2;
      }else if(P.vy<95){
@@ -2710,15 +2735,15 @@ function drawParadox(){
        frameKey='fall_01';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.255;
-       scaleY=1.255;
+       scaleX=1.10;
+       scaleY=1.10;
        rot=Math.max(-.018,Math.min(.015,P.vy/900));
      }else{
        frameKey='fall_01';
        nextFrameKey=null;
        blend=0;
-       scaleX=1.255;
-       scaleY=1.255;
+       scaleX=1.10;
+       scaleY=1.10;
        rot=.032;
      }
    }
