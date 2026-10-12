@@ -193,7 +193,7 @@ function burst(x,y,n,col){
 }
 
 function spawnDebris(x,y,type,elite=false,marsVariant=null){
-  const n = type==='crystal'?18:type==='enemy'?(elite?28:20):type==='barrier'?18:16;
+  const n = type==='crystal'?18:type==='enemy'?(elite?15:12):type==='barrier'?18:16;
   const cols = type==='crystal'
     ? ['#7ff7ff','#ff7bd5','#ffe26a','#af7cff','#ffffff','#7cffbb']
     : type==='enemy'
@@ -206,16 +206,17 @@ function spawnDebris(x,y,type,elite=false,marsVariant=null){
 
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2;
-    const sp=120+Math.random()*300;
+    const sp=type==='enemy'?65+Math.random()*155:120+Math.random()*300;
     debris.push({
       x,y,
       vx:Math.cos(a)*sp,
       vy:Math.sin(a)*sp-110,
-      life:.8+Math.random()*.75,
+      life:type==='enemy'?.48+Math.random()*.48:.8+Math.random()*.75,
       maxLife:1.55,
       rot:Math.random()*Math.PI*2,
       vr:(Math.random()-.5)*12,
-      size:5+Math.random()*10,
+      size:type==='enemy'?4+Math.random()*6:5+Math.random()*10,
+      part:type==='enemy'?i%5:undefined,
       type,
       col:cols[(Math.random()*cols.length)|0],
       marsVariant
@@ -713,10 +714,14 @@ function drawGalaxyThorn(h,t){
   function flesh(x,y,cx,cy,ex,ey,tx,ty,w){
     // Continuous shaded flesh: no stripes, rib blocks or internal geometry.
     const pts=[x,y,cx,cy,ex,ey,tx,ty];
+    // Shadow contour and cool reflected light follow the same continuous anatomy.
+    line([x+1.5,y+1.1,cx+1.5,cy+1.1,ex+1.5,ey+1.1,tx+1.5,ty+1.1],'rgba(11,5,29,.75)',w+4);
     line(pts,'#17091e',w+3.2);
     line(pts,'#432047',w+1);
     line(pts,'#822d78',w*.91);
+    line([x+.7,y+.4,cx+.7,cy+.4,ex+.7,ey+.4,tx+.7,ty+.4],'rgba(91,67,167,.28)',w*.48);
     line(pts,'#c4489c',w*.67);
+    line([x-.4,y-.6,cx-.4,cy-.6,ex-.4,ey-.6,tx-.4,ty-.6],'rgba(255,109,186,.28)',w*.42);
     line([x-1.3,y-1.1,cx-1.3,cy-1.1,ex-1.3,ey-1.1,tx-1.3,ty-1.1],'#ee75bb',w*.31);
     line([x-2.1,y-1.8,cx-2.1,cy-1.8,ex-2.1,ey-1.8,tx-2.1,ty-1.8],'rgba(255,192,225,.77)',Math.max(.7,w*.09));
     // Pale hooked tip stays sharp, with a dark socket for depth.
@@ -2133,7 +2138,7 @@ function draw(){
      ctx.lineTo(xx+28,p.y+vh-9);
      ctx.lineTo(xx+19,p.y+vh-4);
      ctx.closePath();ctx.fill();
-     ctx.strokeStyle='rgba(148,119,226,.29)';ctx.lineWidth=1;
+     ctx.strokeStyle='rgba(148,119,226,.13)';ctx.lineWidth=1;
      ctx.beginPath();ctx.moveTo(xx+3,p.y+vh-9);ctx.lineTo(xx+16+shift,p.y+vh-14);ctx.stroke();
    }
    // Sparse embedded crystal veins: internal light rather than a flat outline.
@@ -2323,13 +2328,32 @@ function draw(){
      ctx.fillStyle='rgba(255,255,255,.5)';
      ctx.fillRect(-1,-d.size*.55,2,d.size*.55);
    } else if(d.type==='enemy'){
-     ctx.beginPath();
-     ctx.moveTo(-d.size*.85,-d.size*.25);
-     ctx.lineTo(d.size*.65,-d.size*.65);
-     ctx.lineTo(d.size*.45,d.size*.75);
-     ctx.lineTo(-d.size*.6,d.size*.5);
-     ctx.closePath();
-     ctx.fill();
+     // V86: recognizable Void Stalker remains, not random geometric confetti.
+     const k=d.part||0, z=d.size;
+     if(k===0 || k===1){
+       // Curved white carapace / helmet fragment with dark biomech underside.
+       ctx.fillStyle='#271a31';
+       ctx.beginPath();ctx.moveTo(-z*.85,z*.2);ctx.quadraticCurveTo(0,-z*.95,z*.95,-z*.22);
+       ctx.lineTo(z*.48,z*.53);ctx.lineTo(-z*.5,z*.62);ctx.closePath();ctx.fill();
+       ctx.fillStyle=k===0?'#e9e3f0':'#c7b8da';
+       ctx.beginPath();ctx.moveTo(-z*.85,-z*.12);ctx.quadraticCurveTo(-z*.12,-z*1.0,z*.92,-z*.37);
+       ctx.lineTo(z*.38,z*.06);ctx.quadraticCurveTo(-z*.15,-z*.36,-z*.64,z*.32);ctx.closePath();ctx.fill();
+       ctx.strokeStyle='#fff9ff';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-z*.56,-z*.12);ctx.quadraticCurveTo(0,-z*.66,z*.48,-z*.48);ctx.stroke();
+     }else if(k===2){
+       // Articulated limb with an ivory claw.
+       ctx.strokeStyle='#34253d';ctx.lineWidth=Math.max(2,z*.4);ctx.beginPath();ctx.moveTo(-z*.55,-z*.65);ctx.lineTo(0,0);ctx.lineTo(z*.32,z*.45);ctx.stroke();
+       ctx.strokeStyle='#d7cce2';ctx.lineWidth=Math.max(1,z*.22);ctx.beginPath();ctx.moveTo(-z*.55,-z*.65);ctx.lineTo(0,0);ctx.stroke();
+       ctx.fillStyle='#f6ebff';ctx.beginPath();ctx.moveTo(z*.3,z*.36);ctx.lineTo(z*.95,z*.66);ctx.lineTo(z*.44,z*.6);ctx.closePath();ctx.fill();
+     }else if(k===3){
+       // Segmented tail armor fragment.
+       ctx.fillStyle='#24172e';ctx.fillRect(-z*.65,-z*.26,z*1.3,z*.52);
+       ctx.fillStyle='#ddd1e7';ctx.beginPath();ctx.ellipse(0,0,z*.5,z*.34,-.35,0,Math.PI*2);ctx.fill();
+       ctx.strokeStyle='#7e5e94';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-z*.2,-z*.2);ctx.lineTo(z*.25,z*.2);ctx.stroke();
+     }else{
+       // Tiny magenta core splinter.
+       ctx.fillStyle='#4b1a68';ctx.beginPath();ctx.moveTo(0,-z*.8);ctx.lineTo(z*.55,0);ctx.lineTo(0,z*.65);ctx.lineTo(-z*.45,0);ctx.closePath();ctx.fill();
+       ctx.fillStyle='#f4b5ff';ctx.fillRect(-1,-z*.42,2,z*.52);
+     }
    } else if(d.type==='barrier'){
      ctx.fillRect(-d.size*.85,-d.size*.35,d.size*1.7,d.size*.7);
      ctx.fillStyle='rgba(255,255,255,.45)';
