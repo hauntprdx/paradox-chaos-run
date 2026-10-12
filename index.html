@@ -711,12 +711,18 @@ function drawGalaxyThorn(h,t){
     ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.stroke();
   }
   function flesh(x,y,cx,cy,ex,ey,tx,ty,w){
-    line([x,y,cx,cy,ex,ey,tx,ty],'#1b071f',w+3);
-    line([x,y,cx,cy,ex,ey,tx,ty],'#63203e',w);
-    line([x-1,y-1,cx-1,cy-1,ex-1,ey-1,tx-1,ty-1],'#aa3a75',Math.max(2,w*.42));
-    line([x-2,y-2,cx-2,cy-2,ex-2,ey-2,tx-2,ty-2],'#e66fa8',1.15);
-    ctx.fillStyle='#ffd1d9';ctx.beginPath();
-    ctx.moveTo(tx-w*.4,ty+1);ctx.lineTo(tx+2,ty-6);ctx.lineTo(tx+w*.38,ty+2);ctx.closePath();ctx.fill();
+    // Continuous shaded flesh: no stripes, rib blocks or internal geometry.
+    const pts=[x,y,cx,cy,ex,ey,tx,ty];
+    line(pts,'#17091e',w+3.2);
+    line(pts,'#432047',w+1);
+    line(pts,'#822d78',w*.91);
+    line(pts,'#c4489c',w*.67);
+    line([x-1.3,y-1.1,cx-1.3,cy-1.1,ex-1.3,ey-1.1,tx-1.3,ty-1.1],'#ee75bb',w*.31);
+    line([x-2.1,y-1.8,cx-2.1,cy-1.8,ex-2.1,ey-1.8,tx-2.1,ty-1.8],'rgba(255,192,225,.77)',Math.max(.7,w*.09));
+    // Pale hooked tip stays sharp, with a dark socket for depth.
+    ctx.fillStyle='#411638';ctx.beginPath();ctx.arc(tx,ty,Math.max(1.7,w*.28),0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffd4e4';ctx.beginPath();
+    ctx.moveTo(tx-w*.34,ty+1);ctx.lineTo(tx+2,ty-6);ctx.lineTo(tx+w*.30,ty+2);ctx.closePath();ctx.fill();
   }
   // Ground contact and gripping roots: all stationary across the cycle.
   ctx.fillStyle='rgba(8,0,14,.78)';
@@ -749,16 +755,7 @@ function drawGalaxyThorn(h,t){
   // Hero tentacle: unmistakable C-hook, dominant in all four poses.
   const hx=5+p.reach,hy=-34-p.rise;
   flesh(0,5,-8,-13,0+p.curl,-38-p.rise,hx,hy,11);
-  // Inner ribbing and plated thorn barbs along the hero arm.
-  ctx.strokeStyle='#35102e';ctx.lineWidth=2.2;
-  for(let i=0;i<4;i++){
-    const y=-4-i*6;
-    ctx.beginPath();ctx.moveTo(-5-i*.25,y);ctx.lineTo(1+i*.45,y-2);ctx.stroke();
-  }
-  ctx.fillStyle='#ed9abb';
-  for(const [x,y] of [[-8,-8],[-8,-15],[-6,-22],[-2,-28]]){
-    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-5,y-4);ctx.lineTo(x-2,y+3);ctx.closePath();ctx.fill();
-  }
+  // No internal ribs or geometric markings: uninterrupted shaded curvature.
   // Heavy, wet base mound and central containment eye.
   const base=ctx.createLinearGradient(0,-5,0,11);
   base.addColorStop(0,'#8b356c');base.addColorStop(.5,'#491735');base.addColorStop(1,'#1b071d');
