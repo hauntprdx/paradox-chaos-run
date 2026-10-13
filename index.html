@@ -1165,6 +1165,11 @@ function drawVoidStalker(h,t){
   const useIllustrated=illustrated&&illustrated.complete&&illustrated.naturalWidth>0;
   const scale=elite?1.45:1;
   ctx.save();ctx.imageSmoothingEnabled=false;
+  // V131: cancel the hazard renderer's inherited 10px purple shadow.
+  // Otherwise the ENTIRE illustrated Stalker casts an oversized duplicate.
+  ctx.shadowBlur=0;
+  ctx.shadowOffsetX=0;
+  ctx.shadowOffsetY=0;
   // V95: planted contact shadow under the sprite, not attached to the breathing cells.
   // The shadow is deliberately small and subtle so it reads against the icy platform.
   ctx.save();
@@ -1172,12 +1177,12 @@ function drawVoidStalker(h,t){
   ctx.globalAlpha=elite?.33:.27;
   ctx.fillStyle='#120d30';
   ctx.beginPath();
-  ctx.ellipse(0,29*scale,38*scale,4.4*scale,0,0,Math.PI*2);
+  ctx.ellipse(0,29*scale,23*scale,3.2*scale,0,0,Math.PI*2);
   ctx.fill();
   ctx.globalAlpha=.14;
   ctx.fillStyle='#a44bea';
   ctx.beginPath();
-  ctx.ellipse(0,29*scale,25*scale,2.1*scale,0,0,Math.PI*2);
+  ctx.ellipse(0,29*scale,15*scale,1.7*scale,0,0,Math.PI*2);
   ctx.fill();
   ctx.restore();
   if(useIllustrated){
@@ -2194,6 +2199,13 @@ function draw(){
    const artY=p.y-artH*surfaceFraction;
    if(art.complete&&art.naturalWidth>0){
       ctx.imageSmoothingEnabled=false;
+      // V131: silhouette-following violet contact separation on the ORIGINAL art.
+      // Unlike a rectangular overlay, the shadow follows each sprite's alpha
+      // and helps near-black / partially transparent slabs read against scenery.
+      ctx.shadowColor='rgba(154,91,230,.82)';
+      ctx.shadowBlur=5;
+      ctx.shadowOffsetY=2;
+      ctx.shadowOffsetX=0;
       // Three-slice rendering preserves illustrated end caps, including
       // the stepped-up edge cap, without changing the walkable top.
       const cap=Math.min(edge?46:39,p.w*.25);
