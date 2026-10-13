@@ -2437,16 +2437,53 @@ function draw(){
  ctx.globalAlpha=1;
 
 
- // V50: Chaos now uses the same full dash renderer as headbutt,
- // so we no longer draw a separate trail behind the regular run sprite.
- drawParadox();
-
+ // V125: Dimensional fractures live BEHIND Paradox and his chains.
+ // No particles, flashes, or gameplay changes. Thin jagged speed lines only.
  if(beam>0){
-   ctx.globalAlpha=.16;
-   ctx.fillStyle='#b55cff';
-   for(let i=0;i<10;i++)ctx.fillRect(Math.random()*W,Math.random()*H,120+Math.random()*260,3);
-   ctx.globalAlpha=1;
+   const tick=performance.now()*.001;
+   const palette=['#a36af4','#59b9ee','#df70d9','#7e77ed'];
+   ctx.save();
+   ctx.lineCap='round';
+   ctx.lineJoin='miter';
+   for(let i=0;i<11;i++){
+     const x=((tick*(210+i%4*62)+i*1356.03)%(W+380))-260;
+     const y=H*(.14+((i*47)%73)/100*.69);
+     const len=65+(i*37)%125;
+     const kink=(i%3===0?2.4:1.2);
+     const phase=Math.sin(tick*5.2+i*2.1);
+     const opacity=(.10+(i%4)*.025)*(.80+.20*Math.abs(phase));
+     const grad=ctx.createLinearGradient(x,y,x+len,y);
+     const color=palette[i%palette.length];
+     grad.addColorStop(0,'rgba(0,0,0,0)');
+     grad.addColorStop(.25,color);
+     grad.addColorStop(.78,color);
+     grad.addColorStop(1,'rgba(0,0,0,0)');
+     ctx.globalAlpha=opacity;
+     ctx.strokeStyle=grad;
+     ctx.lineWidth=i%4===0?1.55:1;
+     ctx.beginPath();
+     ctx.moveTo(x,y);
+     ctx.lineTo(x+len*.30,y);
+     ctx.lineTo(x+len*.38,y-kink);
+     ctx.lineTo(x+len*.46,y+kink*.45);
+     ctx.lineTo(x+len*.67,y+kink*.45);
+     ctx.lineTo(x+len*.74,y-kink*.65);
+     ctx.lineTo(x+len,y-kink*.65);
+     ctx.stroke();
+     // Rare, tiny branch: suggests a crack in space rather than a lightning storm.
+     if(i%4===0){
+       ctx.globalAlpha=opacity*.55;
+       ctx.beginPath();
+       ctx.moveTo(x+len*.46,y+kink*.45);
+       ctx.lineTo(x+len*.53,y+kink*1.6);
+       ctx.lineTo(x+len*.61,y+kink*1.6);
+       ctx.stroke();
+     }
+   }
+   ctx.restore();
  }
+ // Character, chains and ember trail stay in the foreground.
+ drawParadox();
 
  ctx.restore();
 
