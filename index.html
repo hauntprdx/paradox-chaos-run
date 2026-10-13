@@ -2137,6 +2137,8 @@ function draw(){
    const artY=p.y-artH*surfaceFraction;
    if(art.complete&&art.naturalWidth>0){
       ctx.imageSmoothingEnabled=false;
+      // Keep original pixels crisp, with a small tonal lift on the two darkest variants.
+      if(which===0||which===1)ctx.filter='brightness(1.13) contrast(1.05)';
       // Three-slice rendering preserves illustrated end caps, including
       // the stepped-up edge cap, without changing the walkable top.
       const cap=Math.min(edge?46:39,p.w*.25);
@@ -2147,7 +2149,20 @@ function draw(){
       // collision plane unchanged.
       const seam=1.25;
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
-      ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
+      // V122: avoid enlarging one tiny central patch across a whole runway.
+      // Fill long middles with a handful of *different* overlapping slices from
+      // the original illustration. Never repeat the whole sprite or its crystals.
+      const midWidth=Math.max(1,p.w-cap*2+seam*2);
+      const slices=Math.max(1,Math.ceil(midWidth/155));
+      for(let j=0;j<slices;j++){
+        const left=j*midWidth/slices;
+        const drawW=midWidth/slices+(j<slices-1?1.1:0);
+        const sourceW=sourceMid/Math.min(slices,3);
+        const sourceStart=sourceCap+(slices===1?0:(j%3)*sourceW);
+        const sw=slices===1?sourceMid:sourceW;
+        ctx.drawImage(art,sourceStart,0,sw,art.naturalHeight,
+          x+cap-seam+left,artY,drawW,artH);
+      }
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
       // The illustrated stone/crystal details carry their own lighting.
       // No synthetic vertical streaks, which made the texture look busy.
