@@ -2136,40 +2136,6 @@ function draw(){
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
       ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
-      // V114: ACTUAL readable road stone across all five illustrated variants.
-      // The earlier transparent wash could not reveal black source pixels.
-      // Paint overlapping, irregular indigo/violet slabs in a 15px-deep band
-      // centered on the collision surface, without drawing a luminous lip.
-      ctx.save();
-      const roadTop=p.y-9, roadDepth=17;
-      ctx.beginPath();ctx.rect(x+2,roadTop,Math.max(0,p.w-4),roadDepth);ctx.clip();
-      ctx.fillStyle='rgba(29,26,73,.84)';
-      ctx.fillRect(x+2,roadTop,Math.max(0,p.w-4),roadDepth);
-      const stoneColors=['#35336f','#403478','#283965','#4b327d','#313b78','#46356c'];
-      const stoneEdge=['#6650a0','#4966a2','#68428f','#4463a1'];
-      const seed=Math.abs(Math.floor(p.x/23)+Math.floor(p.w/17));
-      for(let j=-1;j<Math.ceil(p.w/23)+1;j++){
-        const n=(seed*13+j*17+1024)>>>0;
-        const sx=x+j*23+((n%7)-3), sy=roadTop+2+(n%3);
-        const sw=20+(n%9), sh=9+(n%5);
-        ctx.fillStyle=stoneColors[n%stoneColors.length];
-        ctx.beginPath();
-        ctx.moveTo(sx+2,sy);ctx.lineTo(sx+sw-4,sy+((n>>3)%3));
-        ctx.lineTo(sx+sw,sy+sh-3);ctx.lineTo(sx+sw-5,sy+sh);
-        ctx.lineTo(sx+3,sy+sh-1);ctx.lineTo(sx,sy+4);ctx.closePath();ctx.fill();
-        ctx.globalAlpha=.5;
-        ctx.strokeStyle=stoneEdge[n%stoneEdge.length];ctx.lineWidth=.85;
-        ctx.beginPath();ctx.moveTo(sx+3,sy+1);ctx.lineTo(sx+sw-5,sy+1+((n>>3)%3));ctx.stroke();
-        ctx.globalAlpha=1;
-        if(n%4===0){
-          ctx.strokeStyle=n%8===0?'rgba(188,62,223,.64)':'rgba(54,151,230,.57)';
-          ctx.lineWidth=1.2;
-          ctx.beginPath();ctx.moveTo(sx+sw*.55,sy+3);
-          ctx.lineTo(sx+sw*.47,sy+7);ctx.lineTo(sx+sw*.64,sy+sh-1);ctx.stroke();
-        }
-      }
-      // A few shallow seams break up the surface; no straight white line.
-      ctx.restore();
       // The illustrated stone/crystal details carry their own lighting.
       // No synthetic vertical streaks, which made the texture look busy.
       }else{
