@@ -2186,9 +2186,13 @@ function draw(){
       const cap=Math.min(edge?46:39,p.w*.25);
       const sourceCap=Math.min(edge?64:53,art.naturalWidth*.21);
       const sourceMid=art.naturalWidth-sourceCap*2;
-      ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap,artH);
-      ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap,artY,Math.max(1,p.w-cap*2),artH);
-      ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap,artY,cap,artH);
+      // V106: overlap adjacent slices slightly to eliminate hairline seams
+      // caused by fractional camera positions. Keep the outer silhouette and
+      // collision plane unchanged.
+      const seam=1.25;
+      ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
+      ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
+      ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
       // The illustrated stone/crystal details carry their own lighting.
       // No synthetic vertical streaks, which made the texture look busy.
       }else{
