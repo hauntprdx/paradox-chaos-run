@@ -750,7 +750,11 @@ function drawGalaxyThorn(h,t){
   ctx.shadowColor='#080516';ctx.shadowBlur=5;
   ctx.drawImage(image,-33,-45,66,66);
   ctx.restore();
+  // V109: opaque ash-lavender body, retains bright teeth and authored pixels.
+  ctx.save();
+  ctx.filter='saturate(.70) brightness(1.20)';
   ctx.drawImage(image,-33,-45,66,66);
+  ctx.restore();
   // A contained, restrained focal highlight makes the maw legible at speed.
   ctx.save();
   ctx.globalAlpha=.35+.08*Math.sin(t*.003);
@@ -779,15 +783,15 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.beginPath();ctx.ellipse(0,12,28,6,0,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
 
-  const ringMain=hot?'#59d8ff':'#ffb39c';
-  const ringHi=hot?'#c9f6ff':'#ffe4f2';
+  const ringMain=hot?'#308db9':'#8c5ac8';
+  const ringHi=hot?'#79c9ec':'#b78ce7';
   const ringLow=hot?'#ff69df':'#f78ed2';
   const crackMain=hot?'#ff5cd7':'#ff9c80';
   const crackCore=hot?'#8beaff':'#ffd3f0';
-  const crustA=hot?'#ad3fc6':'#6432ad';
-  const crustB=hot?'#383081':'#351a66';
-  const crustC=hot?'#45baff':'#8b57df';
-  const crustD=hot?'#ff7fe7':'#c7a0ff';
+  const crustA=hot?'#8427aa':'#51208f';
+  const crustB=hot?'#26205e':'#27134e';
+  const crustC=hot?'#257ac9':'#7034c3';
+  const crustD=hot?'#d43bb7':'#9e66df';
   const chipHi=hot?'#7ddfff':'#d8a8ff';
   const chipLo=hot?'#7635aa':'#6d45b5';
   const deepShade=hot?'rgba(22,20,58,.52)':'rgba(18,12,44,.50)';
@@ -818,10 +822,10 @@ function drawRingedPlanet(h,t,variant='normal'){
 
   // sphere base
   const g=ctx.createRadialGradient(-7,-8,3,0,0,25);
-  g.addColorStop(0,hot?'#ff86e9':'#c18bff');
-  g.addColorStop(.28,hot?'#ca4bf3':'#8a49de');
-  g.addColorStop(.64,hot?'#4547bd':'#55298f');
-  g.addColorStop(1,hot?'#1d153f':'#1e1037');
+  g.addColorStop(0,hot?'#c52ac0':'#9050d6');
+  g.addColorStop(.28,hot?'#8826c0':'#6730bb');
+  g.addColorStop(.64,hot?'#262d89':'#402073');
+  g.addColorStop(1,hot?'#100d2b':'#160c2b');
   ctx.fillStyle=g;
   ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();
 
@@ -829,7 +833,7 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.save();
   ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.clip();
   let grd=ctx.createLinearGradient(-18,-16,18,18);
-  grd.addColorStop(0,'rgba(255,255,255,.16)');
+  grd.addColorStop(0,'rgba(215,162,255,.065)');
   grd.addColorStop(.36,'rgba(255,255,255,.02)');
   grd.addColorStop(.68,'rgba(30,18,60,.10)');
   grd.addColorStop(1,deepShade);
@@ -846,7 +850,7 @@ function drawRingedPlanet(h,t,variant='normal'){
 
   // subtle top-left bloom
   const bloom=ctx.createRadialGradient(-10,-11,1,-10,-11,16);
-  bloom.addColorStop(0,hot?'rgba(255,196,247,.18)':'rgba(247,214,255,.18)');
+  bloom.addColorStop(0,hot?'rgba(240,116,224,.08)':'rgba(188,121,255,.08)');
   bloom.addColorStop(.6,'rgba(255,255,255,.04)');
   bloom.addColorStop(1,'rgba(255,255,255,0)');
   ctx.fillStyle=bloom;
@@ -854,8 +858,8 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.restore();
 
   // soft top-light and lower shadow rim
-  ctx.globalAlpha=.34;
-  ctx.strokeStyle=hot?'#b9f2ff':'#e4bdff'; ctx.lineWidth=2.1;
+  ctx.globalAlpha=.16;
+  ctx.strokeStyle=hot?'#78c5e6':'#ae82df'; ctx.lineWidth=2.1;
   ctx.beginPath();ctx.arc(-2,-2,19.6,3.9,5.55);ctx.stroke();
   ctx.globalAlpha=.18;
   ctx.strokeStyle='#000000'; ctx.lineWidth=2.6;
@@ -947,8 +951,8 @@ function drawRingedPlanet(h,t,variant='normal'){
   ctx.fillRect(11,-4,1,1);ctx.fillRect(-1,13,1,1);
 
   if(hot){
-    ctx.globalAlpha=.18+.12*pulse;
-    ctx.fillStyle='#55d9ff';
+    ctx.globalAlpha=.045+.035*pulse;
+    ctx.fillStyle='#367cc6';
     ctx.beginPath();ctx.arc(0,0,23.3,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;
   }
@@ -979,8 +983,8 @@ function drawRingedPlanet(h,t,variant='normal'){
     ctx.stroke();
     chip([[-6,-14],[-2,-13],[-1,-10],[-5,-9],[-7,-11]], '#ff86eb',.9);
     chip([[11,10],[15,9],[16,12],[12,14],[9,12]], '#67d9ff',.9);
-    ctx.globalAlpha=.16+.12*pulse;
-    ctx.fillStyle='#ff55d4';
+    ctx.globalAlpha=.035+.025*pulse;
+    ctx.fillStyle='#aa2a98';
     ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;
   }
@@ -2255,9 +2259,13 @@ function draw(){
  for(const h of hazards){
    if(!h.alive)continue;let x=h.x-world-viewLookAhead();
    if(x<-100||x>W+100)continue;
-   ctx.save();ctx.translate(x+h.w/2,h.y+h.h/2);
-   ctx.shadowBlur=h.type==='crystal'?18:(h.type==='enemy'?12:8);
-   ctx.shadowColor=h.type==='crystal'?'#aefaff':(h.type==='enemy'?'#b35cff':'#8fdfff');
+   ctx.save();
+   // V109: visual alignment only. Planets no longer sink into the platform;
+   // stalker feet sit closer to the platform top. Collision data is unchanged.
+   const artLift=h.type==='table'?5:(h.type==='enemy'?12:0);
+   ctx.translate(x+h.w/2,h.y+h.h/2-artLift);
+   ctx.shadowBlur=h.type==='crystal'?18:(h.type==='enemy'?10:(h.type==='table'?2:8));
+   ctx.shadowColor=h.type==='crystal'?'#aefaff':(h.type==='enemy'?'#b35cff':(h.type==='table'?'#39216e':'#8fdfff'));
    if(h.type==='crystal') drawCosmicCore(h,artT);
    else if(h.type==='spike') drawGalaxyThorn(h,artT);
    else if(h.type==='enemy') drawVoidStalker(h,artT);
