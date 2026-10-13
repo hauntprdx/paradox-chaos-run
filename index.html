@@ -2192,15 +2192,39 @@ function draw(){
    const art=v103PlatformImages[which];
    const crystal=which===2, edge=false, skull=false;
    const baseHeight=Math.min(67,Math.max(47,p.w*.18));
-   const artH=baseHeight+(crystal?16:edge?10:skull?5:0);
-   // V105: align the PAINTED walking surface to the real collision plane.
-   // Tall crystals and the stepped edge extend above that plane decoratively.
-   // V136: The original ART 0/1 PNGs already contain a thin illustrated top face.
-   // Align that actual top face to the collision plane, leaving ART 2 unchanged.
-   const surfaceFraction=[.105,.115,.46][which];
+   // V137: ART 0/1 were vertically compressed into thin strips. Give the
+   // original illustrated stone walls enough depth to read as floating slabs.
+   // ART 2 keeps its original height and alignment, and p.y is never changed.
+   const artH=which===2 ? baseHeight+16 : baseHeight+34;
+   // The first substantially opaque source row is around row 20 of ~100.
+   // Anchor that painted edge to the actual collision plane rather than
+   // anchoring a nearly transparent top row to it.
+   const surfaceFraction=[.192,.198,.46][which];
    const artY=p.y-artH*surfaceFraction;
    if(art&&art.complete&&art.naturalWidth>0){
       ctx.imageSmoothingEnabled=false;
+      // V137: subtle stone cap beneath the original PNG. This is a narrow
+      // perspective face, not a new platform sprite or a collision change.
+      // The painted original overlays the cap, preserving cracks and end caps.
+      if(which!==2){
+        ctx.save();
+        const lip=7;
+        ctx.beginPath();
+        ctx.moveTo(x+2,p.y+1);
+        ctx.lineTo(x+Math.min(11,p.w*.06),p.y-lip);
+        ctx.lineTo(x+p.w-Math.min(11,p.w*.06),p.y-lip);
+        ctx.lineTo(x+p.w-2,p.y+1);
+        ctx.closePath();
+        const face=ctx.createLinearGradient(0,p.y-lip,0,p.y+2);
+        face.addColorStop(0,'#3a315f');
+        face.addColorStop(.48,'#28254c');
+        face.addColorStop(1,'#12182f');
+        ctx.fillStyle=face;ctx.fill();
+        ctx.globalAlpha=.48;
+        ctx.strokeStyle='#9d66e2';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(x+11,p.y-lip+1);ctx.lineTo(x+p.w-11,p.y-lip+1);ctx.stroke();
+        ctx.restore();
+      }
       // V132: all variants resolve to actual authored platform PNGs.
       // No added synthetic glow or geometry.
       // Three-slice rendering preserves illustrated end caps, including
