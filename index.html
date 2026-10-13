@@ -2437,22 +2437,22 @@ function draw(){
  ctx.globalAlpha=1;
 
 
- // V126: high-contrast dimensional fractures rush LEFT against Paradox's motion.
+ // V127: 15% brighter and more opaque, 20% faster, richer saturation; high-contrast dimensional fractures rush LEFT against Paradox's motion.
  // Visual-only, drawn behind the hero and chains; no screen flashes.
  if(beam>0){
    const tick=performance.now()*.001;
-   const palette=['#b277ff','#61d5ff','#ff70d7','#897bff'];
+   const palette=['#a058ff','#3dcbff','#ff4fce','#6e5dff'];
    ctx.save();
    ctx.lineCap='round';
    ctx.lineJoin='bevel';
    for(let i=0;i<11;i++){
-     const speed=420+(i%4)*95;
+     const speed=(420+(i%4)*95)*1.20;
      // Negative movement is crucial: the environment whips past to the LEFT.
      const x=W+185-((tick*speed+i*211.37)%(W+460));
      const y=H*(.14+((i*47)%73)/100*.69);
      const len=78+(i*37)%140;
      const kink=i%3===0?3.2:1.6;
-     const opacity=(.37+(i%4)*.055)*(.90+.10*Math.abs(Math.sin(tick*6+i)));
+     const opacity=Math.min(.85,(.37+(i%4)*.055)*1.15*(.90+.10*Math.abs(Math.sin(tick*6+i))));
      const color=palette[i%palette.length];
      const grad=ctx.createLinearGradient(x,y,x+len,y);
      grad.addColorStop(0,'rgba(0,0,0,0)');
