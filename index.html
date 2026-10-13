@@ -969,6 +969,38 @@ function drawRingedPlanet(h,t,variant='normal'){
     ctx.globalAlpha=1;
   }
 
+  // V107 planet polish: layered broken ring plates, surface fracture branches,
+  // and tiny suspended crust chips. Decorative only; hitboxes stay unchanged.
+  ctx.save();
+  ctx.rotate(-.16);
+  const arcSegments=[[-30,-2,-26,-4],[-20,7,-15,9],[11,9,17,7],[23,3,28,1]];
+  for(let i=0;i<arcSegments.length;i++){
+    const a=arcSegments[i];
+    ctx.strokeStyle=i%2===0?(hot?'#8aeaff':'#ffd2ef'):(hot?'#fb69d6':'#aa75ff');
+    ctx.lineWidth=i%2===0?2.2:1.5;
+    ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(a[2],a[3]);ctx.stroke();
+  }
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath();ctx.arc(0,0,21.5,0,Math.PI*2);ctx.clip();
+  ctx.strokeStyle=hot?'rgba(255,124,223,.66)':'rgba(224,164,255,.65)';
+  ctx.lineWidth=.85;
+  ctx.beginPath();
+  ctx.moveTo(-15,-6);ctx.lineTo(-10,-4);ctx.lineTo(-8,0);
+  ctx.moveTo(11,-11);ctx.lineTo(7,-7);ctx.lineTo(5,-3);
+  ctx.moveTo(-5,11);ctx.lineTo(-1,13);ctx.lineTo(2,17);
+  ctx.moveTo(12,5);ctx.lineTo(16,7);ctx.lineTo(17,11);
+  ctx.stroke();
+  ctx.restore();
+  const flecks=[[-27,-12,2,1],[29,-9,1,2],[-28,10,2,2],[26,13,2,1]];
+  for(let i=0;i<flecks.length;i++){
+    const f=flecks[i];
+    ctx.globalAlpha=.55+.18*Math.sin(phase*1.2+i);
+    ctx.fillStyle=i%2?(hot?'#ff79e4':'#d8b0ff'):(hot?'#7de7ff':'#9a6ce4');
+    ctx.fillRect(f[0],f[1],f[2],f[3]);
+  }
+  ctx.globalAlpha=1;
+
   // ambient glints
   ctx.globalAlpha=.56+.26*pulse;
   ctx.fillStyle=hot?'#7deaff':'#ff9acb';
