@@ -2174,8 +2174,11 @@ function draw(){
    const art=v103PlatformImages[which];
    const crystal=which===2, edge=which===4, skull=which===3;
    const baseHeight=Math.min(67,Math.max(47,p.w*.18));
-   const artY=p.y-(crystal?19:edge?10:skull?9:7);
    const artH=baseHeight+(crystal?16:edge?10:skull?5:0);
+   // V105: align the PAINTED walking surface to the real collision plane.
+   // Tall crystals and the stepped edge extend above that plane decoratively.
+   const surfaceFraction=[.18,.19,.46,.33,.28][which];
+   const artY=p.y-artH*surfaceFraction;
    if(art.complete&&art.naturalWidth>0){
       ctx.imageSmoothingEnabled=false;
       // Three-slice rendering preserves illustrated end caps, including
@@ -2186,24 +2189,14 @@ function draw(){
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap,artH);
       ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap,artY,Math.max(1,p.w-cap*2),artH);
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap,artY,cap,artH);
-      // Subtle luminous seams and a little crystalline sparkle below the slab.
-      ctx.save();ctx.globalAlpha=.23;
-      ctx.fillStyle=crystal?'#e15bff':'#9e4bf1';
-      for(let k=0;k<Math.min(7,Math.floor(p.w/45));k++){
-        const sx=x+18+k*39,sy=p.y+12+((k*13+variant*5)%13);
-        ctx.fillRect(sx,sy,2,6+(k%3)*3);
-      }
-      ctx.restore();
+      // The illustrated stone/crystal details carry their own lighting.
+      // No synthetic vertical streaks, which made the texture look busy.
       }else{
       // Never allow missing art to create invisible platforms.
       ctx.fillStyle='#202444';ctx.fillRect(x,p.y,p.w,Math.min(p.h,30));
    }
-   // Keep the precise collision-height cyan landing edge from the locked V85 style.
-   const lip=ctx.createLinearGradient(0,p.y-2,0,p.y+6);
-   lip.addColorStop(0,'#e9ffff');lip.addColorStop(.45,'#8ff4ff');lip.addColorStop(1,'rgba(88,162,233,.18)');
-   ctx.shadowBlur=4;ctx.shadowColor='#6feeff';
-   ctx.fillStyle=lip;ctx.fillRect(x+4,p.y-1,Math.max(1,p.w-8),2);
-   ctx.shadowBlur=0;
+   // V105: remove the white/cyan overlay lip entirely. It floated above
+   // the painted stone and made Paradox appear to stand on a separate line.
    ctx.restore();
  } // hazards
  const artT=performance.now();
