@@ -2219,6 +2219,18 @@ function draw(){
       // Never allow missing art to create invisible platforms.
       ctx.fillStyle='#202444';ctx.fillRect(x,p.y,p.w,Math.min(p.h,30));
    }
+   // V134: label the actual artwork variant and vertical offset on each slab.
+   // This is screen-only diagnostics and cannot affect physics or artwork.
+   ctx.save();
+   ctx.font='bold 11px monospace';
+   ctx.textAlign='left';
+   ctx.lineWidth=3;
+   ctx.strokeStyle='rgba(0,0,0,.95)';
+   ctx.fillStyle=which===0?'#ffdc75':which===1?'#76e6ff':'#f4a4ff';
+   const diagnosticLabel='ART '+which+'  OFFSET '+Math.round(artH*surfaceFraction)+'px';
+   ctx.strokeText(diagnosticLabel,x+7,p.y-23);
+   ctx.fillText(diagnosticLabel,x+7,p.y-23);
+   ctx.restore();
    // V133 DIAGNOSTIC ONLY: actual walkable collision plane.
    // Cyan = p.y collision top. Magenta = upper edge of the rendered sprite.
    // These guides do not modify the collision, geometry, or original artwork.
