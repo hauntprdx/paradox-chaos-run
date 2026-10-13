@@ -2018,6 +2018,58 @@ function drawLowCrystalHaze(){
   ctx.restore();
 }
 
+
+// V129: seam-safe, deterministic distant mountain parallax.
+// Pure scenery: no collision, platform, enemy, or dash changes.
+function v129Hash(n, salt){
+  let x = (Math.imul(n|0, 374761393) + Math.imul(salt|0, 668265263))|0;
+  x = Math.imul(x ^ (x >>> 13), 1274126177);
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967295;
+}
+function v129Smooth(t){ return t*t*(3-2*t); }
+function v129Noise(x, salt){
+  const i=Math.floor(x), f=x-i;
+  return v129Hash(i,salt)*(1-v129Smooth(f))+v129Hash(i+1,salt)*v129Smooth(f);
+}
+function drawV129MountainLayer(parallax, baseY, height, salt, fill, rim, opacity){
+  const offset=world*parallax;
+  const step=7;
+  ctx.save();
+  ctx.globalAlpha=opacity;
+  ctx.beginPath();
+  ctx.moveTo(-step,H+2);
+  for(let px=-step;px<=W+step*2;px+=step){
+    const wx=(px+offset);
+    const broad=v129Noise(wx/260,salt);
+    const peaks=v129Noise(wx/85,salt+13);
+    const ridges=v129Noise(wx/28,salt+29);
+    const y=H*baseY-height*(.16+.56*broad+.22*peaks+.06*ridges);
+    ctx.lineTo(px,y);
+  }
+  ctx.lineTo(W+step*2,H+2);
+  ctx.closePath();
+  ctx.fillStyle=fill;
+  ctx.fill();
+  // A restrained upper-edge highlight, drawn from the identical world coordinates.
+  ctx.beginPath();
+  for(let px=-step;px<=W+step*2;px+=step){
+    const wx=px+offset;
+    const y=H*baseY-height*(.16+.56*v129Noise(wx/260,salt)+.22*v129Noise(wx/85,salt+13)+.06*v129Noise(wx/28,salt+29));
+    if(px===-step)ctx.moveTo(px,y);else ctx.lineTo(px,y);
+  }
+  ctx.strokeStyle=rim;
+  ctx.lineWidth=1;
+  ctx.globalAlpha=opacity*.5;
+  ctx.stroke();
+  ctx.restore();
+}
+function drawV129DistantMountains(){
+  // Both silhouettes are generated in continuous world coordinates,
+  // so no tile boundaries or repeating panorama seams can appear.
+  drawV129MountainLayer(.028,.79,H*.26,129,'#17112d','#9b65d6',.43);
+  drawV129MountainLayer(.065,.91,H*.25,293,'#110d24','#6d4aab',.64);
+}
+
 function drawGalaxyArtLoop(){
   const portrait=isPortrait();
   const t=performance.now();
@@ -2040,6 +2092,8 @@ function drawGalaxyArtLoop(){
   drawMasterPanorama(masterPanoImg,{alpha:.18,blur:10,brightness:.28,saturate:.80,offsetX:14,offsetY:14});
   drawMasterPanorama(masterPanoImg,{alpha:.95,brightness:.97,saturate:1.05});
 
+  // V129 mountains sit behind ruins and all gameplay artwork.
+  drawV129DistantMountains();
   drawSparseNearRuins();
 
   ctx.save();
