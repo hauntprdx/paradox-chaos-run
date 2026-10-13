@@ -2136,6 +2136,22 @@ function draw(){
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
       ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
+      // V113: unify the painted roadway on ALL five platform variants.
+      // This is a broad, translucent road-surface wash, not a thin bright lip.
+      // The top stays dark enough for character silhouettes and retains the
+      // existing cracks, stones, and illustrated end caps underneath.
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x+2,p.y-3,Math.max(0,p.w-4),12);
+      ctx.clip();
+      const road=ctx.createLinearGradient(0,p.y-3,0,p.y+9);
+      road.addColorStop(0,'rgba(54,38,115,0)');
+      road.addColorStop(.34,'rgba(92,56,171,.25)');
+      road.addColorStop(.68,'rgba(63,51,138,.22)');
+      road.addColorStop(1,'rgba(28,25,75,0)');
+      ctx.fillStyle=road;
+      ctx.fillRect(x+2,p.y-3,Math.max(0,p.w-4),12);
+      ctx.restore();
       // The illustrated stone/crystal details carry their own lighting.
       // No synthetic vertical streaks, which made the texture look busy.
       }else{
