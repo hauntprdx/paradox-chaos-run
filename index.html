@@ -2149,16 +2149,16 @@ function draw(){
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
       ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
-      // V118 experimental roadway perspective: ONLY the long classic-stone
-      // variant. Reproject the actual illustrated TOP of this same sprite into
-      // a readable shallow stone deck. The original cliff/front stays intact.
-      // This is not a glow or painted line; it is the existing stone texture.
+      // V119 final roadway polish: a wider, centered walking deck.
+      // Filter ONLY this reprojected strip, not the character or other sprites.
       if(which===0 && p.w>=340){
-        const deckH=15;
-        const deckY=p.y-11;
+        const deckH=22;
+        const deckY=p.y-16;
         const sourceTop=Math.max(1,Math.round(art.naturalHeight*.075));
         const sourceDeck=Math.max(2,Math.round(art.naturalHeight*.22));
         ctx.save();
+        ctx.imageSmoothingEnabled=true;
+        ctx.imageSmoothingQuality='high';
         ctx.beginPath();
         ctx.rect(x,deckY,p.w,deckH);
         ctx.clip();
