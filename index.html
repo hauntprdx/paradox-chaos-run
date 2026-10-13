@@ -2146,26 +2146,39 @@ function draw(){
       // caused by fractional camera positions. Keep the outer silhouette and
       // collision plane unchanged.
       const seam=1.25;
+      // V120: repeat the actual illustrated middle stonework at near-native scale
+      // rather than stretching a small patch across the entire long roadway.
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
-      ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
+      const middleX=x+cap-seam;
+      const middleW=Math.max(1,p.w-cap*2+seam*2);
+      const tileW=Math.min(90,Math.max(54,artH*1.12));
+      ctx.save();
+      ctx.beginPath();ctx.rect(middleX,artY,middleW,artH);ctx.clip();
+      for(let dx=0;dx<middleW;dx+=tileW-1){
+        const dw=Math.min(tileW,middleW-dx);
+        ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,middleX+dx,artY,tileW,artH);
+      }
+      ctx.restore();
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
-      // V119 final roadway polish: a wider, centered walking deck.
-      // Filter ONLY this reprojected strip, not the character or other sprites.
-      if(which===0 && p.w>=340){
-        const deckH=22;
-        const deckY=p.y-16;
-        const sourceTop=Math.max(1,Math.round(art.naturalHeight*.075));
-        const sourceDeck=Math.max(2,Math.round(art.naturalHeight*.22));
-        ctx.save();
-        ctx.imageSmoothingEnabled=true;
-        ctx.imageSmoothingQuality='high';
-        ctx.beginPath();
-        ctx.rect(x,deckY,p.w,deckH);
-        ctx.clip();
-        ctx.drawImage(art,0,sourceTop,sourceCap,sourceDeck,x,deckY,cap+seam,deckH);
-        ctx.drawImage(art,sourceCap,sourceTop,sourceMid,sourceDeck,x+cap-seam,deckY,Math.max(1,p.w-cap*2+seam*2),deckH);
-        ctx.drawImage(art,art.naturalWidth-sourceCap,sourceTop,sourceCap,sourceDeck,x+p.w-cap-seam,deckY,cap+seam,deckH);
-        ctx.restore();
+      // The road top uses crisp illustrated stone, not the blurred V119 strip.
+      // Center its visible depth around the collision plane while preserving physics.
+      if(p.w>=300){
+        const roadArt=v103PlatformImages[0];
+        if(roadArt.complete && roadArt.naturalWidth){
+          const deckH=18, deckY=p.y-14;
+          const sourceY=Math.round(roadArt.naturalHeight*.085);
+          const sourceH=Math.round(roadArt.naturalHeight*.19);
+          const sourceX=Math.round(roadArt.naturalWidth*.24);
+          const sourceW=Math.round(roadArt.naturalWidth*.52);
+          ctx.save();
+          ctx.imageSmoothingEnabled=false;
+          ctx.beginPath();ctx.rect(x,deckY,p.w,deckH);ctx.clip();
+          const roadTile=86;
+          for(let dx=0;dx<p.w;dx+=roadTile-1){
+            ctx.drawImage(roadArt,sourceX,sourceY,sourceW,sourceH,x+dx,deckY,roadTile,deckH);
+          }
+          ctx.restore();
+        }
       }
       // The illustrated stone/crystal details carry their own lighting.
       // No synthetic vertical streaks, which made the texture look busy.
