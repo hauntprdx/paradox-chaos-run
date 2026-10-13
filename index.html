@@ -2437,30 +2437,31 @@ function draw(){
  ctx.globalAlpha=1;
 
 
- // V125: Dimensional fractures live BEHIND Paradox and his chains.
- // No particles, flashes, or gameplay changes. Thin jagged speed lines only.
+ // V126: high-contrast dimensional fractures rush LEFT against Paradox's motion.
+ // Visual-only, drawn behind the hero and chains; no screen flashes.
  if(beam>0){
    const tick=performance.now()*.001;
-   const palette=['#a36af4','#59b9ee','#df70d9','#7e77ed'];
+   const palette=['#b277ff','#61d5ff','#ff70d7','#897bff'];
    ctx.save();
    ctx.lineCap='round';
-   ctx.lineJoin='miter';
+   ctx.lineJoin='bevel';
    for(let i=0;i<11;i++){
-     const x=((tick*(210+i%4*62)+i*1356.03)%(W+380))-260;
+     const speed=420+(i%4)*95;
+     // Negative movement is crucial: the environment whips past to the LEFT.
+     const x=W+185-((tick*speed+i*211.37)%(W+460));
      const y=H*(.14+((i*47)%73)/100*.69);
-     const len=65+(i*37)%125;
-     const kink=(i%3===0?2.4:1.2);
-     const phase=Math.sin(tick*5.2+i*2.1);
-     const opacity=(.10+(i%4)*.025)*(.80+.20*Math.abs(phase));
-     const grad=ctx.createLinearGradient(x,y,x+len,y);
+     const len=78+(i*37)%140;
+     const kink=i%3===0?3.2:1.6;
+     const opacity=(.37+(i%4)*.055)*(.90+.10*Math.abs(Math.sin(tick*6+i)));
      const color=palette[i%palette.length];
+     const grad=ctx.createLinearGradient(x,y,x+len,y);
      grad.addColorStop(0,'rgba(0,0,0,0)');
-     grad.addColorStop(.25,color);
-     grad.addColorStop(.78,color);
+     grad.addColorStop(.16,color);
+     grad.addColorStop(.82,color);
      grad.addColorStop(1,'rgba(0,0,0,0)');
      ctx.globalAlpha=opacity;
      ctx.strokeStyle=grad;
-     ctx.lineWidth=i%4===0?1.55:1;
+     ctx.lineWidth=i%4===0?2:1.35;
      ctx.beginPath();
      ctx.moveTo(x,y);
      ctx.lineTo(x+len*.30,y);
@@ -2470,9 +2471,8 @@ function draw(){
      ctx.lineTo(x+len*.74,y-kink*.65);
      ctx.lineTo(x+len,y-kink*.65);
      ctx.stroke();
-     // Rare, tiny branch: suggests a crack in space rather than a lightning storm.
      if(i%4===0){
-       ctx.globalAlpha=opacity*.55;
+       ctx.globalAlpha=opacity*.5;
        ctx.beginPath();
        ctx.moveTo(x+len*.46,y+kink*.45);
        ctx.lineTo(x+len*.53,y+kink*1.6);
