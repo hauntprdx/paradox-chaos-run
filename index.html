@@ -2437,48 +2437,40 @@ function draw(){
  ctx.globalAlpha=1;
 
 
- // V127: 15% brighter and more opaque, 20% faster, richer saturation; high-contrast dimensional fractures rush LEFT against Paradox's motion.
- // Visual-only, drawn behind the hero and chains; no screen flashes.
+ // V128: clean high-speed counterflow with restrained dimensional kinks.
+ // Long tapered threads read as speed; sparse short fractures suggest torn space.
+ // Visual-only: hero, chains, embers, collision and dash velocity are unchanged.
  if(beam>0){
    const tick=performance.now()*.001;
-   const palette=['#a058ff','#3dcbff','#ff4fce','#6e5dff'];
+   const palette=['#a46aff','#50caff','#f46bd7','#8672ff'];
    ctx.save();
    ctx.lineCap='round';
-   ctx.lineJoin='bevel';
-   for(let i=0;i<11;i++){
-     const speed=(420+(i%4)*95)*1.20;
-     // Negative movement is crucial: the environment whips past to the LEFT.
-     const x=W+185-((tick*speed+i*211.37)%(W+460));
-     const y=H*(.14+((i*47)%73)/100*.69);
-     const len=78+(i*37)%140;
-     const kink=i%3===0?3.2:1.6;
-     const opacity=Math.min(.85,(.37+(i%4)*.055)*1.15*(.90+.10*Math.abs(Math.sin(tick*6+i))));
+   ctx.lineJoin='round';
+   for(let i=0;i<13;i++){
+     // Counterflow from right to left. Vary length and speed for parallax.
+     const speed=690+(i%5)*115;
+     const x=W+260-((tick*speed+i*217.41)%(W+640));
+     const y=H*(.13+((i*47)%79)/100*.70);
+     const len=105+(i*41)%195;
      const color=palette[i%palette.length];
      const grad=ctx.createLinearGradient(x,y,x+len,y);
      grad.addColorStop(0,'rgba(0,0,0,0)');
      grad.addColorStop(.16,color);
-     grad.addColorStop(.82,color);
+     grad.addColorStop(.77,color);
      grad.addColorStop(1,'rgba(0,0,0,0)');
-     ctx.globalAlpha=opacity;
+     ctx.globalAlpha=.31+(i%4)*.065;
      ctx.strokeStyle=grad;
-     ctx.lineWidth=i%4===0?2:1.35;
+     ctx.lineWidth=i%5===0?1.9:1.25;
      ctx.beginPath();
      ctx.moveTo(x,y);
-     ctx.lineTo(x+len*.30,y);
-     ctx.lineTo(x+len*.38,y-kink);
-     ctx.lineTo(x+len*.46,y+kink*.45);
-     ctx.lineTo(x+len*.67,y+kink*.45);
-     ctx.lineTo(x+len*.74,y-kink*.65);
-     ctx.lineTo(x+len,y-kink*.65);
-     ctx.stroke();
+     // Only one in four threads receives a tiny sharp dimensional break.
      if(i%4===0){
-       ctx.globalAlpha=opacity*.5;
-       ctx.beginPath();
-       ctx.moveTo(x+len*.46,y+kink*.45);
-       ctx.lineTo(x+len*.53,y+kink*1.6);
-       ctx.lineTo(x+len*.61,y+kink*1.6);
-       ctx.stroke();
+       ctx.lineTo(x+len*.46,y);
+       ctx.lineTo(x+len*.51,y-2.1);
+       ctx.lineTo(x+len*.56,y);
      }
+     ctx.lineTo(x+len,y);
+     ctx.stroke();
    }
    ctx.restore();
  }
