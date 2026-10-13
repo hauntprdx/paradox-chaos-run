@@ -2066,8 +2066,8 @@ function drawV129MountainLayer(parallax, baseY, height, salt, fill, rim, opacity
 function drawV129DistantMountains(){
   // Both silhouettes are generated in continuous world coordinates,
   // so no tile boundaries or repeating panorama seams can appear.
-  drawV129MountainLayer(.028,.79,H*.26,129,'#17112d','#9b65d6',.43);
-  drawV129MountainLayer(.065,.91,H*.25,293,'#110d24','#6d4aab',.64);
+  drawV129MountainLayer(.028,.72,H*.35,129,'#312052','#a77ce9',.76);
+  drawV129MountainLayer(.065,.85,H*.32,293,'#201537','#8e61c8',.88);
 }
 
 function drawGalaxyArtLoop(){
@@ -2092,8 +2092,6 @@ function drawGalaxyArtLoop(){
   drawMasterPanorama(masterPanoImg,{alpha:.18,blur:10,brightness:.28,saturate:.80,offsetX:14,offsetY:14});
   drawMasterPanorama(masterPanoImg,{alpha:.95,brightness:.97,saturate:1.05});
 
-  // V129 mountains sit behind ruins and all gameplay artwork.
-  drawV129DistantMountains();
   drawSparseNearRuins();
 
   ctx.save();
@@ -2109,6 +2107,10 @@ function drawGalaxyArtLoop(){
   ctx.restore();
 
   drawLowCrystalHaze();
+
+  // V130 fix: paint mountain silhouettes AFTER the source-in atmospheric mask.
+  // The mask otherwise removes the new silhouettes from the canvas.
+  drawV129DistantMountains();
 
   drawSubtleOverlayDust();
 
