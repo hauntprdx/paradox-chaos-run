@@ -2219,24 +2219,94 @@ function draw(){
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
       ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
-      // V141: show the ACTUAL V116 authored stone-mosaic top on ART 0/1.
-      // Preserve V140 original glowing side walls, ART 2, collisions and enemies.
-      // The original top 25 source pixels contain the painted irregular stone
-      // slabs and magenta fissures. Draw that crop after the wall so it remains
-      // readable, at the existing collision plane. No synthetic asphalt fill.
+      // V140: readable mineral-rock deck, preserving the original ruin walls.
+      // Deterministic variation per platform; no change to collision or art 2.
       if(which!==2){
-        const topArt=v141OriginalTopImages[which];
-        if(topArt.complete&&topArt.naturalWidth>0){
-          ctx.save();ctx.shadowBlur=0;ctx.imageSmoothingEnabled=false;
-          const topH=15, topY=p.y-13;
-          const sourceH=Math.min(27,topArt.naturalHeight);
-          const topCap=Math.min(39,p.w*.25);
-          const srcCap=Math.min(53,topArt.naturalWidth*.21);
-          const mid=topArt.naturalWidth-2*srcCap;
-          const overlap=.6;
-          ctx.drawImage(topArt,0,0,srcCap,sourceH,x,topY,topCap+overlap,topH);
-          ctx.drawImage(topArt,srcCap,0,mid,sourceH,x+topCap-overlap,topY,Math.max(1,p.w-2*topCap+2*overlap),topH);
-          ctx.drawImage(topArt,topArt.naturalWidth-srcCap,0,srcCap,sourceH,x+p.w-topCap-overlap,topY,topCap+overlap,topH);
+        ctx.save();ctx.shadowBlur=0;
+        const depth=11, topY=p.y-depth;
+        const seed=Math.floor(p.x/11)*13+which*47;
+        const hash=(n)=>{const z=Math.sin(n*127.1+seed*19.19)*43758.5453;return z-Math.floor(z);};
+        const pts=[];
+        let t=0,k=0;
+        while(t<p.w){pts.push([x+t,topY+1.0+hash(k+3)*2.2]);t+=19+hash(k+7)*29;k++;}
+        pts.push([x+p.w,topY+2]);
+        ctx.beginPath();ctx.moveTo(x,topY+3);
+        for(const q of pts)ctx.lineTo(q[0],q[1]);
+        ctx.lineTo(x+p.w,p.y+1);
+        t=p.w;k=0;
+        while(t>0){ctx.lineTo(x+t,p.y+hash(k+41)*1.5);t-=19+hash(k+27)*31;k++;}
+        ctx.lineTo(x,p.y+1);ctx.closePath();
+        const rock=ctx.createLinearGradient(0,topY,0,p.y+2);
+        // Indigo mineral stone rather than black asphalt; variant-specific palette.
+        if(which===0){
+          rock.addColorStop(0,'#424178');rock.addColorStop(.42,'#333a71');rock.addColorStop(1,'#202b59');
+        }else{
+          rock.addColorStop(0,'#48366e');rock.addColorStop(.45,'#373164');rock.addColorStop(1,'#23264e');
+        }
+        ctx.fillStyle=rock;ctx.fill();
+        ctx.save();ctx.clip();
+        // Pull texture directly from the existing authored wall art so the deck
+        // belongs to the same material; translucent to retain the brighter rock.
+        ctx.globalAlpha=.32;
+        const sourceY=Math.floor(art.naturalHeight*.27);
+        const sourceH=Math.max(4,Math.floor(art.naturalHeight*.27));
+        ctx.drawImage(art,0,sourceY,art.naturalWidth,sourceH,x,topY-1,p.w,depth+4);
+        ctx.globalAlpha=1;
+        // Irregular translucent fractured facets, not evenly spaced tiles.
+        let pos=0,n=0;
+        while(pos<p.w){
+          const width=24+hash(n+11)*61;
+          const left=x+pos, right=x+Math.min(p.w,pos+width);
+          const mid=left+(right-left)*(.24+hash(n+23)*.48);
+          const h1=topY+1+hash(n+19)*3;
+          const h2=p.y-1-hash(n+31)*2;
+          ctx.beginPath();ctx.moveTo(left,h1);ctx.lineTo(mid,topY+2+hash(n+37)*4);
+          ctx.lineTo(right,h2);ctx.lineTo(mid-(right-left)*.16,p.y+1);ctx.closePath();
+          ctx.fillStyle=n%4===0?'rgba(117,89,163,.18)':n%3===0?'rgba(55,104,164,.21)':'rgba(111,84,145,.13)';ctx.fill();
+          if(hash(n+59)>.23){
+            ctx.strokeStyle=hash(n+61)>.47?'rgba(236,81,243,.76)':'rgba(83,189,248,.65)';
+            ctx.lineWidth=.85+hash(n+67)*.7;
+            ctx.beginPath();ctx.moveTo(mid,h1);ctx.lineTo(mid+3+hash(n+71)*10,h1+2);
+            ctx.lineTo(mid+1+hash(n+73)*13,h2);
+            if(hash(n+79)>.52)ctx.lineTo(mid+13+hash(n+83)*11,h2+2);
+            ctx.stroke();
+          }
+          pos+=width;n++;
+        }
+        for(let j=0;j<Math.floor(p.w/32);j++){
+          const px=x+hash(j+101)*p.w,py=topY+2+hash(j+109)*7;
+          ctx.fillStyle=j%3===0?'rgba(235,96,255,.6)':'rgba(72,179,240,.48)';
+          ctx.fillRect(px,py,2+hash(j+113)*4,1);
+        }
+        ctx.restore();
+        // Interrupted mineral rim, with occasional bright chipped edges.
+        ctx.lineWidth=.8;
+        for(let i=0;i<pts.length-1;i++){
+          if(hash(i+131)<.34)continue;
+          ctx.strokeStyle=i%4===0?'rgba(211,96,233,.68)':'rgba(129,115,201,.55)';
+          ctx.beginPath();ctx.moveTo(pts[i][0],pts[i][1]);ctx.lineTo(pts[i+1][0],pts[i+1][1]);ctx.stroke();
+        }
+        ctx.restore();
+      }
+      // V142: original V116 stone-tile paint laid ON TOP of the proven V140
+      // visible deck. V140 geometry is always painted first as a fallback.
+      // Sample rows 5..25, where the top-facing mosaic stones actually live.
+      if(which!==2){
+        const mosaic=v141OriginalTopImages[which];
+        if(mosaic && mosaic.complete && mosaic.naturalWidth>0){
+          ctx.save();
+          ctx.shadowBlur=0;
+          ctx.imageSmoothingEnabled=false;
+          ctx.globalAlpha=.93;
+          const sy=5, sh=20;
+          const dy=p.y-12, dh=12;
+          const dc=Math.min(39,p.w*.25);
+          const sc=Math.min(53,mosaic.naturalWidth*.21);
+          const sm=mosaic.naturalWidth-2*sc;
+          const ov=.75;
+          ctx.drawImage(mosaic,0,sy,sc,sh,x,dy,dc+ov,dh);
+          ctx.drawImage(mosaic,sc,sy,sm,sh,x+dc-ov,dy,Math.max(1,p.w-2*dc+2*ov),dh);
+          ctx.drawImage(mosaic,mosaic.naturalWidth-sc,sy,sc,sh,x+p.w-dc-ov,dy,dc+ov,dh);
           ctx.restore();
         }
       }
