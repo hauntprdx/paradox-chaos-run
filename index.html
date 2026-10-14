@@ -2288,25 +2288,41 @@ function draw(){
         }
         ctx.restore();
       }
-      // V142: original V116 stone-tile paint laid ON TOP of the proven V140
-      // visible deck. V140 geometry is always painted first as a fallback.
-      // Sample rows 5..25, where the top-facing mosaic stones actually live.
+      // V143: Restore the real V116 stone-mosaic top, not its transparent margin.
+      // The authored PNG has nearly transparent rows 0..12; rows 16..37
+      // contain the chunky upper stone mosaic and its cracked front edge.
+      // Render as a readable top plane while retaining V140's solid fallback.
       if(which!==2){
         const mosaic=v141OriginalTopImages[which];
         if(mosaic && mosaic.complete && mosaic.naturalWidth>0){
           ctx.save();
           ctx.shadowBlur=0;
           ctx.imageSmoothingEnabled=false;
-          ctx.globalAlpha=.93;
-          const sy=5, sh=20;
-          const dy=p.y-12, dh=12;
+          // Perspective-visible mosaic: rear lip is higher, front edge meets
+          // the existing stone wall at the unchanged collision height.
+          const deckDepth=25;
+          const topY=p.y-deckDepth;
+          const sy=14, sh=24;
           const dc=Math.min(39,p.w*.25);
           const sc=Math.min(53,mosaic.naturalWidth*.21);
           const sm=mosaic.naturalWidth-2*sc;
-          const ov=.75;
-          ctx.drawImage(mosaic,0,sy,sc,sh,x,dy,dc+ov,dh);
-          ctx.drawImage(mosaic,sc,sy,sm,sh,x+dc-ov,dy,Math.max(1,p.w-2*dc+2*ov),dh);
-          ctx.drawImage(mosaic,mosaic.naturalWidth-sc,sy,sc,sh,x+p.w-dc-ov,dy,dc+ov,dh);
+          const ov=1;
+          // Clip the outer silhouette to a shallow, irregular stone plane.
+          ctx.beginPath();
+          ctx.moveTo(x,topY+2);
+          const n=Math.max(2,Math.ceil(p.w/31));
+          for(let i=1;i<=n;i++){
+            const u=i/n;
+            const variation=Math.sin((Math.floor(p.x/117)+i)*2.43)*1.15;
+            ctx.lineTo(x+p.w*u,topY+1.7+variation);
+          }
+          ctx.lineTo(x+p.w,p.y+1);
+          ctx.lineTo(x,p.y+1);
+          ctx.closePath();ctx.clip();
+          // Stretch only the upper authored stone plane, never the blank margin.
+          ctx.drawImage(mosaic,0,sy,sc,sh,x,topY,dc+ov,deckDepth+1);
+          ctx.drawImage(mosaic,sc,sy,sm,sh,x+dc-ov,topY,Math.max(1,p.w-2*dc+2*ov),deckDepth+1);
+          ctx.drawImage(mosaic,mosaic.naturalWidth-sc,sy,sc,sh,x+p.w-dc-ov,topY,dc+ov,deckDepth+1);
           ctx.restore();
         }
       }
