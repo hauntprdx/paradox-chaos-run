@@ -2203,30 +2203,32 @@ function draw(){
    const artY=p.y+2-artH*surfaceFraction;
    if(art&&art.complete&&art.naturalWidth>0){
       ctx.imageSmoothingEnabled=false;
-      // V147: restore the *authored* top pixels from ART 0 and ART 1.
-      // Earlier synthetic overlays obscured those pixels and looked like a
-      // separate roadway. The original PNG contains both stone top and wall.
+      // V148: source-measured surface band. The first 16 PNG rows are
+      // mostly transparent (ART 0 ~17%, ART 1 ~38% coverage at row 16).
+      // The opaque painted stone starts around row 20. Reuse that authored
+      // stone band as the deck, rather than stretching transparent pixels.
       if(which!==2){
-        const deckDepth=14;
-        const sourceTop=16; // original PNG rows containing the cracked top face
         const cap=Math.min(39,p.w*.25);
         const sourceCap=Math.min(53,art.naturalWidth*.21);
         const sourceMid=art.naturalWidth-sourceCap*2;
         const seam=1.25;
-        // Keep the upper stone face aligned above the physics plane, while
-        // the original stone wall begins at the physics plane. No repeated
-        // wall course, polygon overlay, or replacement texture.
+        const deckTop=18, deckBottom=36, deckDepth=15;
+        const wallTop=31;
         const slices=[
           [0,sourceCap,x,cap+seam],
           [sourceCap,sourceMid,x+cap-seam,Math.max(1,p.w-cap*2+seam*2)],
           [art.naturalWidth-sourceCap,sourceCap,x+p.w-cap-seam,cap+seam]
         ];
         for(const [sx,sw,dx,dw] of slices){
-          ctx.drawImage(art,sx,0,sw,sourceTop,dx,p.y-deckDepth,dw,deckDepth+1);
-          ctx.drawImage(art,sx,sourceTop,sw,art.naturalHeight-sourceTop,
-            dx,p.y,dw,Math.max(1,artH-deckDepth));
+          // Solid original stone, raised to make the walkable plane legible.
+          ctx.drawImage(art,sx,deckTop,sw,deckBottom-deckTop,
+            dx,p.y-deckDepth,dw,deckDepth+1);
+          // Original wall continues immediately beneath, without a second
+          // wall course or a synthetic polygon-tile cap.
+          ctx.drawImage(art,sx,wallTop,sw,art.naturalHeight-wallTop,
+            dx,p.y+1,dw,Math.max(1,artH-deckDepth));
         }
-      }else{
+            }else{
         // ART 2 already has the desired crystal top and remains unchanged.
         const cap=Math.min(39,p.w*.25);
         const sourceCap=Math.min(53,art.naturalWidth*.21);
