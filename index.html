@@ -2217,9 +2217,9 @@ function draw(){
       ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
       ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
       ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
-      // V145: one single shallow perspective face, NOT a second wall layer.
-      // The front of this deck meets the painted wall at the collision plane.
-      // No wall sprite is sampled for the deck; no duplicated horizontal courses.
+      // V146: keep the V145 visible single-face geometry, but paint it as
+      // fractured mineral stone instead of a course of outlined trapezoids.
+      // No extra wall rows, no changes to collision, sprite, or ART 2.
       if(which!==2){
         ctx.save();
         ctx.shadowBlur=0;
@@ -2227,38 +2227,53 @@ function draw(){
         const deckDepth=14, rear=p.y-deckDepth, front=p.y+1;
         const seed=Math.floor(p.x/23)+which*107;
         const rnd=n=>{const z=Math.sin((seed+n)*91.71)*41758.5453;return z-Math.floor(z);};
-        ctx.beginPath();ctx.moveTo(x,rear+1);ctx.lineTo(x+p.w,rear+1);
-        ctx.lineTo(x+p.w,front);ctx.lineTo(x,front);ctx.closePath();
+        ctx.beginPath();ctx.rect(x,rear+1,p.w,front-rear-1);ctx.clip();
         const base=ctx.createLinearGradient(0,rear,0,front);
-        base.addColorStop(0,which===0?'#353864':'#393462');
-        base.addColorStop(.65,'#292d55');base.addColorStop(1,'#222947');
-        ctx.fillStyle=base;ctx.fill();ctx.clip();
-        // Single course of irregular flat stone plates, drawn in perspective.
-        let left=-8,idx=0;
-        while(left<p.w){
-          const width=39+Math.floor(rnd(idx+8)*26);
+        base.addColorStop(0,which===0?'#262c54':'#2b2854');
+        base.addColorStop(.55,'#222a4d');base.addColorStop(1,'#19213e');
+        ctx.fillStyle=base;ctx.fillRect(x,rear,p.w,deckDepth+2);
+        // Uneven, interlocking stone faces. The fractures are internal to
+        // one continuous top surface, never a second stacked brick course.
+        let left=-14,idx=0;
+        while(left<p.w+15){
+          const width=35+Math.floor(rnd(idx+8)*42);
           const x0=x+left,x1=x+left+width;
-          const bevel=3+rnd(idx+11)*4;
-          ctx.beginPath();ctx.moveTo(x0+bevel,rear+2);
-          ctx.lineTo(x1-3,rear+1+rnd(idx+12)*2);
-          ctx.lineTo(x1,front-1);ctx.lineTo(x0+1,front-1);
+          const shift=(rnd(idx+11)-.5)*11;
+          const chip=2+rnd(idx+12)*5;
+          ctx.beginPath();
+          ctx.moveTo(x0+chip,rear+1+rnd(idx+13)*3);
+          ctx.lineTo(x0+width*.48,rear+1+rnd(idx+14)*3);
+          ctx.lineTo(x1-chip,rear+1+rnd(idx+15)*4);
+          ctx.lineTo(x1+shift*.32,rear+7+rnd(idx+16)*3);
+          ctx.lineTo(x1-3+shift,front-1);
+          ctx.lineTo(x0+shift*.3+2,front-1);
+          ctx.lineTo(x0+shift*.15,rear+8);
           ctx.closePath();
           const tone=rnd(idx+19);
-          ctx.fillStyle=tone>.7?'rgba(84,70,145,.33)':tone>.35?'rgba(41,79,133,.30)':'rgba(67,57,119,.30)';
+          ctx.fillStyle=tone>.7?'rgba(58,67,116,.78)':tone>.37?'rgba(35,65,112,.76)':'rgba(63,48,108,.69)';
           ctx.fill();
-          ctx.strokeStyle=tone>.6?'rgba(127,87,181,.66)':'rgba(72,112,173,.57)';
-          ctx.lineWidth=1;ctx.stroke();
-          if(rnd(idx+25)>.65){
-            ctx.beginPath();ctx.moveTo(x0+width*.44,rear+4);
-            ctx.lineTo(x0+width*.52,rear+8);ctx.lineTo(x0+width*.47,front-2);
-            ctx.strokeStyle=idx%2?'rgba(221,82,239,.62)':'rgba(62,172,229,.6)';ctx.stroke();
+          ctx.strokeStyle='rgba(9,15,36,.65)';ctx.lineWidth=.85;ctx.stroke();
+          // Small stone grain, not a bright manufactured panel outline.
+          for(let k=0;k<3;k++){
+            const px=x0+7+rnd(idx*17+k+40)*Math.max(5,width-14);
+            const py=rear+4+rnd(idx*19+k+80)*8;
+            ctx.fillStyle=k===0?'rgba(89,102,162,.34)':'rgba(75,54,126,.28)';
+            ctx.fillRect(px,py,2+rnd(idx+k+90)*5,.7);
+          }
+          // Rare, crooked mineral fissures matching the wall's glow.
+          if(rnd(idx+25)>.69){
+            const fx=x0+width*(.26+rnd(idx+29)*.48);
+            ctx.beginPath();ctx.moveTo(fx,rear+2);
+            ctx.lineTo(fx+3,rear+5);ctx.lineTo(fx-1,rear+8);
+            ctx.lineTo(fx+4,front-2);
+            ctx.strokeStyle=idx%2?'rgba(219,63,226,.67)':'rgba(52,151,212,.62)';
+            ctx.lineWidth=1.35;ctx.stroke();
           }
           left+=width;idx++;
         }
+        // One thin contact shadow visually fuses deck and illustrated wall.
+        ctx.fillStyle='rgba(9,12,30,.35)';ctx.fillRect(x,front-2,p.w,2);
         ctx.restore();
-        // A single restrained junction highlight, not a raised curb.
-        ctx.strokeStyle='rgba(102,91,173,.65)';ctx.lineWidth=.8;
-        ctx.beginPath();ctx.moveTo(x,p.y+1);ctx.lineTo(x+p.w,p.y+1);ctx.stroke();
       }
       // The illustrated stone/crystal details carry their own lighting.
       // No synthetic vertical streaks, which made the texture look busy.
