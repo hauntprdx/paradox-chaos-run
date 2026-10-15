@@ -1,3 +1,4 @@
+<!-- V160: visible deck support bounds. V159 mountains, moon, platforms, assets preserved. -->
 <!-- V159: moon companion +25%, source-inspired infinite mountain parallax + valley haze. V155 gameplay/platforms locked. -->
 <!-- V158 SECTION 2: opaque painted moons, V157 sky + V155 gameplay/platform lock preserved. -->
 <!-- V157 BACKGROUND SECTION 1 FIX: legacy duplicate renderer disabled. V155 gameplay/platform lock preserved. -->
@@ -553,7 +554,16 @@ function update(dt){
  let landed=false;
  for(const p of platforms){
    const px=p.x-world-viewLookAhead();
-   if(P.x+P.w>px && P.x<px+p.w &&
+   // V160: The one-piece sprites have irregular/transparent end margins.
+   // Ground support uses the central foot point against a conservative visible
+   // deck inset, instead of keeping Paradox grounded on a 1px box overlap.
+   // These are visual-support bounds only: platform generation stays untouched.
+   const artSlot=Math.abs(Math.floor(p.x/400))%5;
+   const edgeInset=artSlot===2 ? .065 : artSlot===3 ? .115 : artSlot===4 ? .035 : .012;
+   const footX=P.x+P.w*.5;
+   const supportLeft=px+p.w*edgeInset;
+   const supportRight=px+p.w*(1-edgeInset);
+   if(footX>=supportLeft && footX<=supportRight &&
       P.y+P.h>=p.y && P.y+P.h<=p.y+Math.max(25,P.vy*dt+8) && P.vy>=0){
       P.y=p.y-P.h; P.vy=0; P.onGround=true;
       // V23: landing triggers once; dedicated run clock takes over afterward.
