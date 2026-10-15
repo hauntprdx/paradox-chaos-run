@@ -1,3 +1,4 @@
+<!-- V158 SECTION 2: opaque painted moons, V157 sky + V155 gameplay/platform lock preserved. -->
 <!-- V157 BACKGROUND SECTION 1 FIX: legacy duplicate renderer disabled. V155 gameplay/platform lock preserved. -->
 <!-- V123: seam-safe rollback to V121 platform renderer; V122 slice experiment removed. -->
 <!doctype html>
@@ -1671,6 +1672,65 @@ function drawSubtleOverlayDust(){
   ctx.restore();
 }
 
+// V158: cached opaque pixel-painted moons. All texture is authored once per moon,
+// not regenerated every frame; only placement changes with very slow parallax.
+const v158MoonCache=[];
+function v158MoonSprite(index){
+  if(v158MoonCache[index])return v158MoonCache[index];
+  const size=112, radius=49;
+  const c=document.createElement('canvas');c.width=c.height=size;
+  const m=c.getContext('2d');
+  m.imageSmoothingEnabled=false;
+  const hash=(x,y,seed)=>{let n=(Math.imul(x+seed,374761393)+Math.imul(y+seed*3,668265263))|0;n=Math.imul(n^(n>>>13),1274126177);return ((n^(n>>>16))>>>0)/4294967295;};
+  // Pixel-scale cratered surface, with actual opaque pixels throughout the body.
+  const step=2;
+  for(let y=0;y<size;y+=step){for(let x=0;x<size;x+=step){
+    const dx=(x+1-size/2)/radius,dy=(y+1-size/2)/radius,d=dx*dx+dy*dy;
+    if(d>1)continue;
+    const nz=Math.sqrt(1-d);
+    const light=Math.max(.10, .28+dx*(-.45)+dy*(-.19)+nz*.66);
+    const noise=(hash(x>>2,y>>2,index+11)-.5)*.22+(hash(x>>3,y>>3,index+19)-.5)*.18;
+    const pits=hash(x>>3,y>>3,index+27)>.81?-.15:0;
+    const value=Math.max(0,Math.min(1,light+noise+pits));
+    const rr=Math.round(24+value*85+(index?8:0));
+    const gg=Math.round(18+value*49+(index?0:3));
+    const bb=Math.round(54+value*111);
+    m.fillStyle=`rgb(${rr},${gg},${bb})`;
+    m.fillRect(x,y,step,step);
+  }}
+  // Irregular restrained lit rim, not a luminous neon outline.
+  m.strokeStyle=index?'rgba(118,137,234,.45)':'rgba(175,111,255,.62)';
+  m.lineWidth=1.5;m.beginPath();m.arc(size/2,size/2,radius+.5,-2.48,.75);m.stroke();
+  return (v158MoonCache[index]=c);
+}
+function v158DrawMoons(){
+  const portrait=isPortrait();
+  // One prominent distant moon and one small companion, with rare repetition.
+  const specs=portrait
+    ? [{x:.76,y:.24,r:49,drift:.010,id:0},{x:.18,y:.39,r:19,drift:.005,id:1}]
+    : [{x:.78,y:.23,r:54,drift:.010,id:0},{x:.23,y:.34,r:24,drift:.005,id:1}];
+  ctx.save();
+  for(const a of specs){
+    const x=a.x*W-world*a.drift;
+    // Wrap only over a very long distance so moons don't visibly repeat each screen.
+    const wrap=W*7;
+    const px=((x+W*2)%wrap+wrap)%wrap-W*2;
+    const py=a.y*H;
+    if(px < -a.r*3 || px>W+a.r*3)continue;
+    const sprite=v158MoonSprite(a.id);
+    const d=a.r*2.24;
+    // A faint local glow behind the solid body.
+    const glow=ctx.createRadialGradient(px,py,a.r*.65,px,py,a.r*1.9);
+    glow.addColorStop(0,a.id?'rgba(83,87,170,.12)':'rgba(110,60,182,.18)');
+    glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;ctx.fillRect(px-a.r*2,py-a.r*2,a.r*4,a.r*4);
+    ctx.globalAlpha=a.id?.77:.91;
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(sprite,Math.round(px-d/2),Math.round(py-d/2),Math.round(d),Math.round(d));
+    ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
 function drawGalaxyArtLoop(){
   // V156 BACKGROUND SECTION 1: FAR SKY + FLICKERING STARS ONLY.
   // This intentionally removes scenic panorama/mountain/ruin art from the active
@@ -1748,7 +1808,10 @@ function drawGalaxyArtLoop(){
   }
   ctx.restore();
 
-  // Minimal top/bottom depth shading. No mountains, moons, ruins or tentacles yet.
+  // V158 moons: drawn inside the background pass, always behind gameplay and HUD.
+  v158DrawMoons();
+
+  // Minimal top/bottom depth shading. Mountains, ruins and tentacles remain off.
   let shade=ctx.createLinearGradient(0,0,0,H*.28);
   shade.addColorStop(0,'rgba(0,0,0,.20)');
   shade.addColorStop(1,'rgba(0,0,0,0)');
