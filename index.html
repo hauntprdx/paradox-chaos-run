@@ -2183,64 +2183,47 @@ function draw(){
    const x=p.x-world-viewLookAhead();
    if(x>W+100||x+p.w<-100)continue;
    ctx.save();
-   // V103: painted, illustrated Cosmic Ruins platform sprites from the approved board.
-   // A deterministic per-platform variation avoids animation flicker and stays stable as the camera scrolls.
-   // V104: five real illustrated variants, chosen deterministically per slab.
-   // The raised / dropped edges are purely decorative: collision remains p.y.
-   const variant=(Math.abs(Math.floor(p.x/117)+Math.floor(p.w/91))%17);
-   const which=[0,1,2,0,1,1,0,2,2,1,0,1,2,0,2,1,1][variant];
-   const art=v103PlatformImages[which];
-   const crystal=which===2, edge=false, skull=false;
-   const baseHeight=Math.min(67,Math.max(47,p.w*.18));
-   // V137: ART 0/1 were vertically compressed into thin strips. Give the
-   // original illustrated stone walls enough depth to read as floating slabs.
-   // ART 2 keeps its original height and alignment, and p.y is never changed.
-   const artH=which===2 ? baseHeight+16 : baseHeight+34;
-   // The first substantially opaque source row is around row 20 of ~100.
-   // Anchor that painted edge to the actual collision plane rather than
-   // anchoring a nearly transparent top row to it.
-   const surfaceFraction=[.192,.198,.46][which];
-   const artY=p.y+2-artH*surfaceFraction;
+   // V149 CLASSIC STONE PROTOTYPE:
+   // Temporarily render every gameplay platform with ONE unified source sprite.
+   // No separate deck layer, no separate wall layer, no synthetic tile cap.
+   // This isolates the renderer so we can approve the structure before restoring
+   // the full five-variant art family.
+   const art=v103PlatformImages[0];
    if(art&&art.complete&&art.naturalWidth>0){
       ctx.imageSmoothingEnabled=false;
-      // V148: source-measured surface band. The first 16 PNG rows are
-      // mostly transparent (ART 0 ~17%, ART 1 ~38% coverage at row 16).
-      // The opaque painted stone starts around row 20. Reuse that authored
-      // stone band as the deck, rather than stretching transparent pixels.
-      if(which!==2){
-        const cap=Math.min(39,p.w*.25);
-        const sourceCap=Math.min(53,art.naturalWidth*.21);
-        const sourceMid=art.naturalWidth-sourceCap*2;
-        const seam=1.25;
-        const deckTop=18, deckBottom=36, deckDepth=15;
-        const wallTop=31;
-        const slices=[
-          [0,sourceCap,x,cap+seam],
-          [sourceCap,sourceMid,x+cap-seam,Math.max(1,p.w-cap*2+seam*2)],
-          [art.naturalWidth-sourceCap,sourceCap,x+p.w-cap-seam,cap+seam]
-        ];
-        for(const [sx,sw,dx,dw] of slices){
-          // Solid original stone, raised to make the walkable plane legible.
-          ctx.drawImage(art,sx,deckTop,sw,deckBottom-deckTop,
-            dx,p.y-deckDepth,dw,deckDepth+1);
-          // Original wall continues immediately beneath, without a second
-          // wall course or a synthetic polygon-tile cap.
-          ctx.drawImage(art,sx,wallTop,sw,art.naturalHeight-wallTop,
-            dx,p.y+1,dw,Math.max(1,artH-deckDepth));
-        }
-            }else{
-        // ART 2 already has the desired crystal top and remains unchanged.
-        const cap=Math.min(39,p.w*.25);
-        const sourceCap=Math.min(53,art.naturalWidth*.21);
-        const sourceMid=art.naturalWidth-sourceCap*2;
-        const seam=1.25;
-        ctx.drawImage(art,0,0,sourceCap,art.naturalHeight,x,artY,cap+seam,artH);
-        ctx.drawImage(art,sourceCap,0,sourceMid,art.naturalHeight,x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH);
-        ctx.drawImage(art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,x+p.w-cap-seam,artY,cap+seam,artH);
-      }
-      }else{
-      // Never allow missing art to create invisible platforms.
-      ctx.fillStyle='#202444';ctx.fillRect(x,p.y,p.w,Math.min(p.h,30));
+
+      // Keep enough vertical size for the authored top face to remain readable.
+      // The collision plane p.y is aligned to the original sprite's front edge
+      // around source row 18, while the entire PNG remains one continuous object.
+      const artH=Math.min(92,Math.max(72,p.w*.22));
+      const surfaceRow=18;
+      const surfaceY=surfaceRow/art.naturalHeight;
+      const artY=p.y-artH*surfaceY;
+
+      // Three-slice the WHOLE sprite only to preserve end caps on long platforms.
+      // Each slice contains the complete top+wall artwork, so there is no horizontal
+      // join between a "floor" layer and a "wall" layer.
+      const cap=Math.min(42,p.w*.25);
+      const sourceCap=Math.min(58,art.naturalWidth*.22);
+      const sourceMid=art.naturalWidth-sourceCap*2;
+      const seam=1.25;
+
+      ctx.drawImage(
+        art,0,0,sourceCap,art.naturalHeight,
+        x,artY,cap+seam,artH
+      );
+      ctx.drawImage(
+        art,sourceCap,0,sourceMid,art.naturalHeight,
+        x+cap-seam,artY,Math.max(1,p.w-cap*2+seam*2),artH
+      );
+      ctx.drawImage(
+        art,art.naturalWidth-sourceCap,0,sourceCap,art.naturalHeight,
+        x+p.w-cap-seam,artY,cap+seam,artH
+      );
+   }else{
+      // Fallback only if the original art has not loaded.
+      ctx.fillStyle='#202444';
+      ctx.fillRect(x,p.y,p.w,Math.min(p.h,30));
    }
 
    ctx.restore();
