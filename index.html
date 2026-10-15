@@ -1,4 +1,4 @@
-<!-- V156 BACKGROUND SECTION 1: far sky + almost-still flickering stars. V155 gameplay/platform lock preserved. -->
+<!-- V157 BACKGROUND SECTION 1 FIX: legacy duplicate renderer disabled. V155 gameplay/platform lock preserved. -->
 <!-- V123: seam-safe rollback to V121 platform renderer; V122 slice experiment removed. -->
 <!doctype html>
 <html lang="en">
@@ -2132,7 +2132,7 @@ function drawV129DistantMountains(){
   drawV129MountainLayer(.065,.85,H*.32,293,'#201537','#8e61c8',.88);
 }
 
-function drawGalaxyArtLoop(){
+function drawGalaxyArtLoopLegacyDisabled(){
   const portrait=isPortrait();
   const t=performance.now();
 
