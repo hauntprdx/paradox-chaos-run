@@ -1,3 +1,4 @@
+<!-- V156 BACKGROUND SECTION 1: far sky + almost-still flickering stars. V155 gameplay/platform lock preserved. -->
 <!-- V123: seam-safe rollback to V121 platform renderer; V122 slice experiment removed. -->
 <!doctype html>
 <html lang="en">
@@ -1671,54 +1672,94 @@ function drawSubtleOverlayDust(){
 }
 
 function drawGalaxyArtLoop(){
+  // V156 BACKGROUND SECTION 1: FAR SKY + FLICKERING STARS ONLY.
+  // This intentionally removes scenic panorama/mountain/ruin art from the active
+  // background for now. Those return one controlled layer at a time in later patches.
   const portrait=isPortrait();
+  const t=performance.now();
 
-  // continuous single-world base; no more stacked scenic bands
+  // Deep World 1 void. Slight vertical atmosphere, but no foreground scenery yet.
   const bg=ctx.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#030311');
-  bg.addColorStop(.34,'#080b26');
-  bg.addColorStop(.72,'#120821');
-  bg.addColorStop(1,'#05030f');
-  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  bg.addColorStop(0,'#02020b');
+  bg.addColorStop(.42,'#05051a');
+  bg.addColorStop(.72,'#0b061b');
+  bg.addColorStop(1,'#05020e');
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,W,H);
 
-  // one master panorama source fills the whole world, first as a dark blurred bed...
-  drawMasterPanorama(masterPanoImg,{blurred:true,alpha:.34});
-
-  // ...then the sharp playable vista on top.
-  drawMasterPanorama(masterPanoImg,{alpha:.95});
-
-  // subtle far-star motion only; keep it faint so the world reads as one piece.
-  drawTiledLayer(starfieldImg,{speed:.0045,alpha:.12,targetH:H*1.02,y:-H*.01,mirror:false,wobble:.5,phase:bgSeed*1.9,scaleJitter:.002});
-  drawSubtleOverlayDust();
-
-  // top-space vignette and lower-atmosphere depth to reduce the flat poster feel.
-  let g=ctx.createLinearGradient(0,0,0,H*.44);
-  g.addColorStop(0,'rgba(0,0,0,.24)');
-  g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.44);
-
-  g=ctx.createLinearGradient(0,H*.42,0,H);
-  g.addColorStop(0,'rgba(0,0,0,0)');
-  g.addColorStop(.55,'rgba(86,58,141,.03)');
-  g.addColorStop(1,'rgba(7,3,18,.24)');
-  ctx.fillStyle=g;ctx.fillRect(0,H*.42,W,H*.58);
-
-  // very subtle edge shade makes the world feel deeper and hides any remaining boundaries.
+  // Very restrained violet/cyan haze, kept dark so the gameplay lane stays crisp.
   ctx.save();
-  let side=ctx.createLinearGradient(0,0,W*.14,0);
-  side.addColorStop(0,'rgba(0,0,0,.22)'); side.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=side; ctx.fillRect(0,0,W*.16,H);
-  side=ctx.createLinearGradient(W,0,W*.86,0);
-  side.addColorStop(0,'rgba(0,0,0,.22)'); side.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=side; ctx.fillRect(W*.84,0,W*.16,H);
+  let haze=ctx.createRadialGradient(W*.18,H*.20,0,W*.18,H*.20,Math.max(W,H)*.56);
+  haze.addColorStop(0,'rgba(77,61,181,.055)');
+  haze.addColorStop(.55,'rgba(40,22,105,.025)');
+  haze.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=haze;
+  ctx.fillRect(0,0,W,H*.72);
+
+  haze=ctx.createRadialGradient(W*.82,H*.28,0,W*.82,H*.28,Math.max(W,H)*.48);
+  haze.addColorStop(0,'rgba(213,58,226,.038)');
+  haze.addColorStop(.62,'rgba(80,32,118,.018)');
+  haze.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=haze;
+  ctx.fillRect(0,0,W,H*.70);
   ctx.restore();
 
-  // lane veil kept extremely light for UI readability without making the scenery transparent.
-  const lane=ctx.createLinearGradient(0,H*.18,0,H*.88);
-  lane.addColorStop(0,'rgba(4,3,12,0)');
-  lane.addColorStop(.72,'rgba(4,3,12,.018)');
-  lane.addColorStop(1,'rgba(4,3,12,.07)');
-  ctx.fillStyle=lane;ctx.fillRect(0,0,W,H);
+  // Deterministic infinite star field.
+  // Nearly stationary: only a whisper of parallax so the sky feels enormous.
+  ctx.save();
+  const count=portrait?92:138;
+  for(let i=0;i<count;i++){
+    const depth=(i%3)+1;
+    const span=W+160;
+    const drift=.00115*depth; // "almost still"
+    const x=((i*181.73 - world*drift) % span + span) % span - 60;
+    const y=18 + ((i*103.17 + (i%11)*29) % Math.max(100,H*.70));
+
+    // Flicker is intentionally asynchronous and subtle, not a full on/off blink.
+    const tw=.5+.5*Math.sin(t*(.00072+(i%5)*.00007)+i*2.17);
+    const pulse=.72+tw*.28;
+    const r=depth===1?.65:depth===2?.95:1.25;
+
+    ctx.globalAlpha=(depth===1?.20:depth===2?.29:.38)*pulse;
+    ctx.fillStyle=i%17===0?'#efc8ff':i%13===0?'#8cecff':'#dfe6ff';
+    ctx.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(r)),Math.max(1,Math.round(r)));
+
+    // Sparse four-point star glints. They fade in and out instead of moving.
+    if(i%31===0 && tw>.58){
+      const arm=tw>.84?4:3;
+      ctx.globalAlpha=.10+tw*.18;
+      ctx.fillStyle=i%2?'#a9efff':'#e6bdff';
+      ctx.fillRect(Math.round(x-arm),Math.round(y),arm*2+1,1);
+      ctx.fillRect(Math.round(x),Math.round(y-arm),1,arm*2+1);
+    }
+  }
+  ctx.restore();
+
+  // Tiny pixel dust gives the sky a little texture without becoming a second layer.
+  ctx.save();
+  for(let i=0;i<(portrait?12:18);i++){
+    const span=W+120;
+    const x=((i*233.5-world*.0007)%span+span)%span-40;
+    const y=30+((i*149.7)%Math.max(100,H*.64));
+    const tw=.5+.5*Math.sin(t*.0009+i*.91);
+    ctx.globalAlpha=.035+tw*.035;
+    ctx.fillStyle=i%3===0?'#69dfff':'#b85cff';
+    ctx.fillRect(Math.round(x),Math.round(y),1,1);
+  }
+  ctx.restore();
+
+  // Minimal top/bottom depth shading. No mountains, moons, ruins or tentacles yet.
+  let shade=ctx.createLinearGradient(0,0,0,H*.28);
+  shade.addColorStop(0,'rgba(0,0,0,.20)');
+  shade.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=shade;
+  ctx.fillRect(0,0,W,H*.28);
+
+  shade=ctx.createLinearGradient(0,H*.67,0,H);
+  shade.addColorStop(0,'rgba(0,0,0,0)');
+  shade.addColorStop(1,'rgba(3,1,10,.20)');
+  ctx.fillStyle=shade;
+  ctx.fillRect(0,H*.67,W,H*.33);
 }
 
 function drawMasterPanorama(img,{alpha=1,blur=0,brightness=.96,saturate=1.06,offsetX=0,offsetY=0}={}){
