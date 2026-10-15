@@ -2190,7 +2190,7 @@ function draw(){
  }
  ctx.globalAlpha=1;
 
- // platforms: V152 CLASSIC STONE + BROKEN LEDGE + CRYSTAL CROWN
+ // platforms: V153 CRYSTAL CROWN GROUND-ANCHOR FIX
  // V150's successful complete-sprite renderer is LOCKED.
  // Only the sprite selection changes: most platforms remain Classic Stone,
  // while a restrained subset uses the Broken Ledge authored variant.
@@ -2216,9 +2216,11 @@ function draw(){
       // The complete sprite remains one object; only its overall display size changes.
       const artH=Math.min(118,Math.max(96,p.w*.20));
 
-      // In the authored sprite, roughly the first fifth is the visible upper deck.
-      // Put the existing collision plane inside that top face rather than on the wall edge.
-      const surfaceFraction=.20;
+      // Each complete sprite gets a visual ground anchor.
+      // Classic Stone + Broken Ledge place the deck near 20% of sprite height.
+      // Crystal Crown has tall gems above its deck, so its actual walkable surface
+      // sits lower in the image. Align that surface to the SAME existing collision plane.
+      const surfaceFraction=(art===v152CrystalCrownImage)?0.42:0.20;
       const artY=p.y-artH*surfaceFraction;
 
       // One draw call = one fused floating ruin. This deliberately avoids the
