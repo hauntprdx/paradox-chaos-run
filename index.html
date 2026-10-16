@@ -8,6 +8,7 @@
 <!-- V161: distant kingdom ruins only; V160 ledge physics and V155 platform artwork preserved. -->
 <!-- V160: visible deck support bounds. V159 mountains, moon, platforms, assets preserved. -->
 <!-- V159: moon companion +25%, source-inspired infinite mountain parallax + valley haze. V155 gameplay/platforms locked. -->
+<!-- V172: luminous diagonal celestial crown and unobstructed painted citadel. Gameplay and source artwork preserved. -->
 <!-- V171: Shattered Crown sky, 30% larger original kingdom formations, dormant Watcher eyes, toon castle hidden. -->
 <style>#inspectCastle{display:none!important}</style>
 <!-- V170: subtle constellation and aurora added to sky only. -->
@@ -1897,61 +1898,88 @@ function v159DrawHazeAndMountains(){
   // V166: replace the old triangulated near mountains, don't stack over them.
   // One opaque-below-the-ridge landscape sampled from the original kingdom art.
   // Preserve gameplay and UI draw order. Slow independent parallax.
-  if(!inspectMode || inspectShowForeground) v159DrawMountainStrip(foregroundImg,H*.705,H*1.65,H*.31,.115,1);
+  // V172: the opaque foreground ridge buried the source-painted citadels.
+  // It is OFF in gameplay. Inspector can opt in to compare the old occlusion.
+  if(inspectMode && inspectShowForeground) v159DrawMountainStrip(foregroundImg,H*.705,H*1.65,H*.31,.115,1);
 
 }
 
-// V170: subtle ancient sky glyph and auroral atmosphere. Scenery only.
-// All coordinates are normalized so portrait/landscape share the same composition.
-// V171: the chosen Shattered Crown, deliberately restrained at gameplay scale.
-// The sparse seven-star arc sits high above the painted world and behind moons.
-function v170DrawCelestialMarking(){
-  const t=performance.now()*.001;
+// V172: ONE diagonal celestial crown inspired by the approved kingdom concept.
+// Cached static nebula texture is drawn once per viewport, not regenerated every
+// animation frame. Soft mineral colors, sparse star flares, no thick arc/ring.
+let v172CrownCache=null, v172CrownWidth=0, v172CrownHeight=0;
+function v172Hash(n){let x=Math.sin(n*127.1+78.233)*43758.5453;return x-Math.floor(x);}
+function v172BuildCrown(){
+  if(v172CrownCache&&v172CrownWidth===W&&v172CrownHeight===H)return;
+  v172CrownWidth=W;v172CrownHeight=H;
+  const layer=document.createElement('canvas');layer.width=Math.max(1,Math.ceil(W));layer.height=Math.max(1,Math.ceil(H));
+  const g=layer.getContext('2d');
   const portrait=isPortrait();
-  ctx.save();
-  ctx.globalCompositeOperation='screen';
-  const pts=portrait?
-    [[.08,.305],[.19,.254],[.30,.217],[.42,.191],[.54,.207],[.67,.247],[.80,.294]]:
-    [[.13,.29],[.24,.225],[.36,.18],[.49,.16],[.62,.18],[.74,.225],[.86,.29]];
-  const points=pts.map(([x,y])=>[W*x,H*y]);
-  // A broken, gauzy auroral arc, not a solid bright ribbon.
-  for(let i=0;i<6;i++){
-    const [ax,ay]=points[i], [bx,by]=points[i+1];
-    const midx=(ax+bx)*.5, midy=(ay+by)*.5-H*.013;
-    const pulse=.85+.15*Math.sin(t*.18+i*.8);
-    const grad=ctx.createLinearGradient(ax,ay,bx,by);
-    grad.addColorStop(0,`rgba(113,64,195,${(.04*pulse).toFixed(3)})`);
-    grad.addColorStop(.52,`rgba(${i%2?'80,185,217':'175,62,208'},${(.11*pulse).toFixed(3)})`);
-    grad.addColorStop(1,`rgba(105,55,185,${(.035*pulse).toFixed(3)})`);
-    ctx.strokeStyle=grad;ctx.lineWidth=Math.max(9,H*.022);
-    ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(midx,midy,bx,by);ctx.stroke();
-    // Fractured thin stellar filaments: one deliberate gap in the crown.
-    if(i!==3){
-      ctx.strokeStyle=`rgba(164,124,238,${(.16*pulse).toFixed(3)})`;
-      ctx.lineWidth=portrait?.7:1;
-      ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(midx,midy,bx,by);ctx.stroke();
-    }
+  // A continuous northwest-to-southeast stellar river. Lower slope in portrait
+  // leaves room for the HUD, moons, and ancient mountain skyline.
+  const start=portrait?[W*.055,H*.135]:[W*.12,H*.07];
+  const end=portrait?[W*.98,H*.355]:[W*.95,H*.42];
+  const dx=end[0]-start[0],dy=end[1]-start[1];
+  const len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
+  const spread=Math.max(9,Math.min(W,H)*(portrait?.043:.062));
+  const at=(u,v=0)=>{
+    const wave=Math.sin(u*Math.PI*3.2)*spread*.18+Math.sin(u*Math.PI*7.1)*spread*.09;
+    return [start[0]+dx*u+nx*(v+wave),start[1]+dy*u+ny*(v+wave)];
+  };
+  g.globalCompositeOperation='screen';
+  // Wispy purple-blue nebula pockets, fading into space, not a hard painted line.
+  for(let i=0;i<43;i++){
+    const u=(i+.5)/43;
+    const off=(v172Hash(i+18)-.5)*spread*1.65;
+    const [x,y]=at(u,off);
+    const radius=spread*(1.05+v172Hash(i+107)*1.5);
+    const grad=g.createRadialGradient(x,y,0,x,y,radius);
+    const color=i%5===0?'76,201,251':i%3===0?'201,64,246':'114,55,230';
+    const alpha=.045+v172Hash(i+234)*.055;
+    grad.addColorStop(0,`rgba(${color},${alpha})`);
+    grad.addColorStop(.4,`rgba(${color},${alpha*.34})`);
+    grad.addColorStop(1,`rgba(${color},0)`);
+    g.fillStyle=grad;g.fillRect(x-radius,y-radius,radius*2,radius*2);
   }
-  // Exactly seven principal stars, with a few quiet pinpoints around the crown.
-  points.forEach(([x,y],i)=>{
-    const tw=.76+.24*Math.sin(t*(.45+i*.035)+i*2.1);
-    const center=i===3;
-    ctx.globalAlpha=(center?.68:.42)*tw;
-    ctx.fillStyle=i%3===1?'#a5e7f7':'#f1d9ff';
-    const size=center?3:2;
-    ctx.fillRect(Math.round(x-size/2),Math.round(y-size/2),size,size);
-    if(i===1||i===3||i===5){
-      ctx.globalAlpha=.15*tw;
-      ctx.fillRect(Math.round(x-5),Math.round(y),10,1);
-      ctx.fillRect(Math.round(x),Math.round(y-5),1,10);
-    }
-  });
-  ctx.globalAlpha=.3;
-  for(let i=0;i<11;i++){
-    const xx=W*(.12+((i*37)%79)/100),yy=H*(.14+((i*23)%22)/100);
-    ctx.fillStyle=i%3===0?'#7cbadf':'#aa86d8';
-    ctx.fillRect(Math.round(xx),Math.round(yy),1,1);
+  // Crisp speckled mineral dust, densest near the diagonal centerline.
+  for(let i=0;i<(portrait?410:760);i++){
+    const u=v172Hash(i+510),v=(v172Hash(i+920)+v172Hash(i+1320)+v172Hash(i+1720)-1.5)*spread*1.25;
+    const [x,y]=at(u,v);
+    const concentration=Math.max(0,1-Math.abs(v)/(spread*2));
+    const a=(.12+.48*concentration)*(.35+.65*v172Hash(i+2100));
+    g.fillStyle=i%7===0?`rgba(110,223,255,${a})`:i%3===0?`rgba(247,125,254,${a})`:`rgba(172,125,255,${a})`;
+    const sz=v172Hash(i+2410)>.91?1.7:1;
+    g.fillRect(Math.round(x),Math.round(y),sz,sz);
   }
+  // A few bright celestial points, small and varied, spaced along ONE diagonal.
+  const stars=[.08,.20,.31,.43,.56,.68,.79,.91];
+  for(let i=0;i<stars.length;i++){
+    const u=stars[i],v=(v172Hash(i+301)-.5)*spread*.95;
+    const [x,y]=at(u,v);
+    const strong=i===2||i===5;
+    const r=Math.max(9,Math.min(W,H)*(strong?.045:.026));
+    const halo=g.createRadialGradient(x,y,0,x,y,r);
+    halo.addColorStop(0,strong?'rgba(255,221,255,.42)':'rgba(200,156,255,.26)');
+    halo.addColorStop(.25,'rgba(168,72,244,.13)');
+    halo.addColorStop(1,'rgba(143,75,241,0)');
+    g.fillStyle=halo;g.fillRect(x-r,y-r,r*2,r*2);
+    g.fillStyle=strong?'rgba(255,245,255,.95)':'rgba(209,190,255,.79)';
+    const core=strong?2.2:1.4;g.fillRect(x-core/2,y-core/2,core,core);
+    g.strokeStyle=strong?'rgba(237,176,255,.48)':'rgba(150,182,248,.24)';
+    g.lineWidth=strong?1:.7;g.beginPath();
+    const reach=strong?Math.min(W,H)*.027:Math.min(W,H)*.013;
+    g.moveTo(x-reach,y);g.lineTo(x+reach,y);g.moveTo(x,y-reach);g.lineTo(x,y+reach);g.stroke();
+  }
+  v172CrownCache=layer;
+}
+function v170DrawCelestialMarking(){
+  v172BuildCrown();
+  if(!v172CrownCache)return;
+  const t=performance.now()*.001;
+  ctx.save();ctx.globalCompositeOperation='screen';
+  // Barely breathing, not a moving laser beam.
+  ctx.globalAlpha=.92+.07*Math.sin(t*.31);
+  ctx.drawImage(v172CrownCache,0,0);
   ctx.restore();
 }
 
@@ -2495,7 +2523,7 @@ function drawGalaxyArtLoopLegacyDisabled(){
   ctx.restore();
 }
 let inspectMode=false;
-let inspectWorld=0; let inspectShowCastle=false; let inspectShowForeground=true;
+let inspectWorld=0; let inspectShowCastle=false; let inspectShowForeground=false;
 const inspectScrub=document.getElementById('inspectScrub');
 function setInspectMode(on){
   inspectMode=on;
