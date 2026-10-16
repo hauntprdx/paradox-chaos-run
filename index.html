@@ -1,3 +1,4 @@
+<!-- V176: true animated Maw eye and moving stone eyelids; test visible. -->
 <!-- V175: feather kingdom strip seam, visible Maw awakening + inspector test, Chaos-metal rhombus controls. -->
 <!-- V174: 35% larger original citadel/Maw panorama, awake Watcher, low source-art ridge. -->
 <!-- V173: citadel and Maw 20% larger, celestial crown chroma pass, soft abyss continuation. -->
@@ -1934,6 +1935,44 @@ function v171DrawWatcherAt(x,y,dw,dh,iw,ih){
   ctx.beginPath();ctx.moveTo(mx-42*scale,my+23*scale);
   ctx.lineTo(mx-26*scale,my+16*scale);ctx.lineTo(mx-8*scale,my+24*scale);
   ctx.lineTo(mx+17*scale,my+20*scale);ctx.lineTo(mx+43*scale,my+27*scale);ctx.stroke();
+  // V176: actual moving geometry. The eye OPENS and CLOSES, unlike the
+  // earlier subtle glow-only animation. Kept inside the existing twin curls.
+  // The test holds the creature awake while it visibly blinks and scans.
+  const testing=performance.now()<v175MawTestUntil;
+  const cycle=(t*1.65)%5.2;
+  const blink=cycle>4.55 ? Math.max(.045,Math.abs(cycle-4.87)/.32) : 1;
+  const open=(testing ? 1 : (.32+.68*awake))*blink;
+  const cx=mx,cy=y+dh*(183/ih);
+  const ew=35*scale,eh=Math.max(.9,11.5*scale*open);
+  ctx.globalAlpha=1;
+  // Shadowed moving stone eyelids, each anchored at the same center.
+  ctx.fillStyle='rgba(10,3,25,.92)';
+  ctx.beginPath();ctx.ellipse(cx,cy,ew+4*scale,eh+4*scale,0,0,Math.PI*2);ctx.fill();
+  const inner=ctx.createLinearGradient(cx,cy-eh,cx,cy+eh);
+  inner.addColorStop(0,'#d04eff');inner.addColorStop(.28,'#32094f');
+  inner.addColorStop(.62,'#09061b');inner.addColorStop(1,'#4e16a8');
+  ctx.fillStyle=inner;
+  ctx.beginPath();ctx.ellipse(cx,cy,ew,eh,0,0,Math.PI*2);ctx.fill();
+  // The pupil actually moves horizontally as it watches Paradox.
+  const gaze=Math.sin(t*.7)*ew*.37;
+  ctx.save();ctx.beginPath();ctx.ellipse(cx,cy,ew,eh,0,0,Math.PI*2);ctx.clip();
+  const pupilX=cx+gaze;
+  ctx.shadowColor='#ff5aff';ctx.shadowBlur=testing?20*scale:10*scale;
+  ctx.fillStyle='#f45aff';ctx.beginPath();ctx.ellipse(pupilX,cy,5.5*scale,Math.max(1,eh*.91),0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff0ff';ctx.beginPath();ctx.ellipse(pupilX-1.2*scale,cy-eh*.2,1.4*scale,Math.max(1,eh*.28),0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // Rim light changes shape with the eyelids: clear movement, no flashing UI.
+  ctx.lineWidth=Math.max(1.1,1.1*scale);
+  ctx.strokeStyle=`rgba(244,113,255,${(.42+.44*open).toFixed(3)})`;
+  ctx.beginPath();ctx.ellipse(cx,cy,ew+1.5*scale,eh+1.5*scale,0,Math.PI*1.05,Math.PI*1.95);ctx.stroke();
+  // Breathing fracture on the throat, not a full-screen effect.
+  const throb=.5+.5*Math.sin(t*2.2);
+  ctx.strokeStyle=`rgba(255,91,240,${(.28+.36*throb).toFixed(3)})`;
+  ctx.lineWidth=Math.max(1,scale*.7);
+  ctx.beginPath();ctx.moveTo(cx-20*scale,cy+17*scale);
+  ctx.lineTo(cx-9*scale,cy+(20+throb*2)*scale);
+  ctx.lineTo(cx+5*scale,cy+16*scale);
+  ctx.lineTo(cx+17*scale,cy+(22-throb*3)*scale);ctx.stroke();
   ctx.restore();
 }
 
@@ -2686,11 +2725,12 @@ inspectCastleBtn.addEventListener('click',()=>{inspectShowCastle=!inspectShowCas
 inspectForegroundBtn.addEventListener('click',()=>{inspectShowForeground=!inspectShowForeground;refreshInspectLayers();});
 refreshInspectLayers();
 document.getElementById('inspectWakeMaw').addEventListener('click',()=>{
-  // Pan to the painted CENTRAL double-curled Maw and hold its awakening for 7s.
+  // Pan to the painted CENTRAL double-curled Maw and hold its awakening for 12s.
   const dw=H*1.95*2.106;
   inspectWorld=Math.max(0,Math.min(16000,(dw*.5-W*.5)/.075));
   inspectScrub.value=String(Math.round(inspectWorld/20)*20);
-  v175MawTestUntil=performance.now()+7000;
+  inspectShowForeground=false;refreshInspectLayers();
+  v175MawTestUntil=performance.now()+12000;
   document.body.classList.add('maw-preview');
 });
 
