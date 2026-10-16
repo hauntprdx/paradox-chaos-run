@@ -1,3 +1,4 @@
+<!-- V173: citadel and Maw 20% larger, celestial crown chroma pass, soft abyss continuation. -->
 <!-- V167: background-only inspection mode, gameplay untouched. -->
 <!-- V169: compact mobile scenery inspector, same layer controls and gameplay. -->
 <!-- V168: inspector layer toggles, castle hidden by default only while inspecting. -->
@@ -1799,7 +1800,9 @@ function v159DrawMountainStrip(img,topY,drawW,drawH,speed,alpha){
 function v171DrawEnlargedKingdom(){
   const img=v159FarMountainImage;
   if(!img.complete||!img.naturalWidth)return;
-  const factor=1.30;
+  // V173: +20% relative to V172. Citadel and Maw are part of one
+  // original continuous painted panorama, so the increase remains seamless.
+  const factor=1.56;
   const dw=H*1.95*factor, dh=H*.265*factor;
   const top=H*.575-(dh-H*.265)*.72;
   const scroll=((world*.075)%dw+dw)%dw;
@@ -1867,6 +1870,37 @@ function v161DrawRuins(){
   v159DrawMountainStrip(v161RuinImage,H*.405,H*2.15,H*.39,.054,1);
 }
 
+// V173: the source panorama ended around 88% screen height, exposing
+// an abrupt black HUD-height band. Continue the valley color to the bottom
+// without inventing a new mountain ridge or covering the citadel/Maw.
+function v173DrawAbyssBase(){
+  ctx.save();
+  const g=ctx.createLinearGradient(0,H*.73,0,H);
+  g.addColorStop(0,'rgba(35,10,81,0)');
+  g.addColorStop(.44,'rgba(30,11,77,.52)');
+  g.addColorStop(.75,'rgba(21,9,56,.97)');
+  g.addColorStop(1,'rgba(11,6,34,1)');
+  ctx.fillStyle=g;ctx.fillRect(0,H*.73,W,H*.27);
+  ctx.restore();
+}
+function v173BlendAbyss(){
+  ctx.save();
+  const g=ctx.createLinearGradient(0,H*.825,0,H*.985);
+  g.addColorStop(0,'rgba(20,7,58,0)');
+  g.addColorStop(.33,'rgba(24,9,67,.25)');
+  g.addColorStop(.67,'rgba(18,8,51,.77)');
+  g.addColorStop(1,'rgba(11,6,34,1)');
+  ctx.fillStyle=g;ctx.fillRect(0,H*.825,W,H*.175);
+  // Quiet distant rock grain, not the old giant triangular foreground.
+  for(let i=0;i<85;i++){
+    const x=((i*89.31-world*.025)%(W+60)+(W+60))%(W+60)-30;
+    const y=H*(.91+((i*47)%89)/1000);
+    const opacity=.025+((i*13)%7)*.006;
+    ctx.fillStyle=i%5===0?`rgba(98,48,148,${opacity})`:`rgba(72,34,120,${opacity})`;
+    ctx.fillRect(Math.round(x),Math.round(y),i%9===0?6:2,1);
+  }
+  ctx.restore();
+}
 function v159DrawHazeAndMountains(){
   // Distant atmospheric haze is separate from solid rock; no flat translucent hills.
   ctx.save();
@@ -1878,9 +1912,13 @@ function v159DrawHazeAndMountains(){
   ctx.fillStyle=mist;ctx.fillRect(0,H*.51,W,H*.44);
   ctx.restore();
 
+  v173DrawAbyssBase();
+
   // Layer 1: actual mountain material sampled from the approved cosmic kingdom art.
   // Wide, slow and muted so the stars and moons retain their sense of distance.
   v171DrawEnlargedKingdom();
+
+  v173BlendAbyss();
 
   // A thin band of valley mist between far and near rock silhouettes.
   ctx.save();
@@ -1921,32 +1959,42 @@ function v172BuildCrown(){
   const end=portrait?[W*.98,H*.355]:[W*.95,H*.42];
   const dx=end[0]-start[0],dy=end[1]-start[1];
   const len=Math.hypot(dx,dy),nx=-dy/len,ny=dx/len;
-  const spread=Math.max(9,Math.min(W,H)*(portrait?.043:.062));
+  const spread=Math.max(9,Math.min(W,H)*(portrait?.052:.069));
   const at=(u,v=0)=>{
     const wave=Math.sin(u*Math.PI*3.2)*spread*.18+Math.sin(u*Math.PI*7.1)*spread*.09;
     return [start[0]+dx*u+nx*(v+wave),start[1]+dy*u+ny*(v+wave)];
   };
   g.globalCompositeOperation='screen';
   // Wispy purple-blue nebula pockets, fading into space, not a hard painted line.
-  for(let i=0;i<43;i++){
-    const u=(i+.5)/43;
+  for(let i=0;i<57;i++){
+    const u=(i+.5)/57;
     const off=(v172Hash(i+18)-.5)*spread*1.65;
     const [x,y]=at(u,off);
     const radius=spread*(1.05+v172Hash(i+107)*1.5);
     const grad=g.createRadialGradient(x,y,0,x,y,radius);
-    const color=i%5===0?'76,201,251':i%3===0?'201,64,246':'114,55,230';
-    const alpha=.045+v172Hash(i+234)*.055;
+    const color=i%4===0?'62,211,255':i%3===0?'242,66,225':'137,67,248';
+    const alpha=.080+v172Hash(i+234)*.068;
     grad.addColorStop(0,`rgba(${color},${alpha})`);
     grad.addColorStop(.4,`rgba(${color},${alpha*.34})`);
     grad.addColorStop(1,`rgba(${color},0)`);
     g.fillStyle=grad;g.fillRect(x-radius,y-radius,radius*2,radius*2);
   }
+  // V173: three distant ion-lit clusters, tucked INSIDE the existing crown.
+  // They add life and contrast without turning it into a second nebula.
+  for(const [u,kind] of [[.27,0],[.52,1],[.75,0]]){
+    const [cx,cy]=at(u,0),rr=spread*(kind?1.8:1.5);
+    const flare=g.createRadialGradient(cx,cy,0,cx,cy,rr);
+    flare.addColorStop(0,kind?'rgba(251,83,225,.19)':'rgba(72,224,255,.22)');
+    flare.addColorStop(.34,kind?'rgba(183,66,245,.08)':'rgba(53,113,247,.09)');
+    flare.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=flare;g.fillRect(cx-rr,cy-rr,rr*2,rr*2);
+  }
   // Crisp speckled mineral dust, densest near the diagonal centerline.
-  for(let i=0;i<(portrait?410:760);i++){
+  for(let i=0;i<(portrait?520:960);i++){
     const u=v172Hash(i+510),v=(v172Hash(i+920)+v172Hash(i+1320)+v172Hash(i+1720)-1.5)*spread*1.25;
     const [x,y]=at(u,v);
     const concentration=Math.max(0,1-Math.abs(v)/(spread*2));
-    const a=(.12+.48*concentration)*(.35+.65*v172Hash(i+2100));
+    const a=(.16+.55*concentration)*(.35+.65*v172Hash(i+2100));
     g.fillStyle=i%7===0?`rgba(110,223,255,${a})`:i%3===0?`rgba(247,125,254,${a})`:`rgba(172,125,255,${a})`;
     const sz=v172Hash(i+2410)>.91?1.7:1;
     g.fillRect(Math.round(x),Math.round(y),sz,sz);
@@ -1959,8 +2007,8 @@ function v172BuildCrown(){
     const strong=i===2||i===5;
     const r=Math.max(9,Math.min(W,H)*(strong?.045:.026));
     const halo=g.createRadialGradient(x,y,0,x,y,r);
-    halo.addColorStop(0,strong?'rgba(255,221,255,.42)':'rgba(200,156,255,.26)');
-    halo.addColorStop(.25,'rgba(168,72,244,.13)');
+    halo.addColorStop(0,strong?'rgba(255,224,255,.57)':'rgba(193,176,255,.37)');
+    halo.addColorStop(.25,'rgba(168,72,244,.19)');
     halo.addColorStop(1,'rgba(143,75,241,0)');
     g.fillStyle=halo;g.fillRect(x-r,y-r,r*2,r*2);
     g.fillStyle=strong?'rgba(255,245,255,.95)':'rgba(209,190,255,.79)';
