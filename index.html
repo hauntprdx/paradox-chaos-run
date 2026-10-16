@@ -1,4 +1,5 @@
 <!-- V167: background-only inspection mode, gameplay untouched. -->
+<!-- V168: inspector layer toggles, castle hidden by default only while inspecting. -->
 <!-- V166: single organic near foreground replaces triangular layers. -->
 <!-- V165: solid foreground cliff cleanup; V164 base preserved. -->
 <!-- V164: near-foreground rock texture refinement only; castle extraction remains staged for separate review. -->
@@ -65,6 +66,7 @@
   #inspectPanel{display:none;position:fixed;z-index:9;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(94vw,470px);padding:10px;background:rgba(8,5,26,.89);border:1px solid #8d6ab6;border-radius:8px;color:white;font:11px monospace;text-align:center}
   #inspectPanel button{padding:9px 14px;font-size:12px;box-shadow:none;border:1px solid #ad91db;margin:4px}
   #inspectPanel input{width:95%;accent-color:#b866ff}
+  #inspectPanel .inspect-layers{display:flex;justify-content:center;flex-wrap:wrap;gap:4px} #inspectPanel .inspect-layers button{font-size:10px;padding:9px 8px;flex:1;min-width:145px} #inspectPanel .inspect-layers button[aria-pressed="false"]{background:#382454;color:#f1dcff} #inspectPanel .inspect-layers button[aria-pressed="true"]{background:#624096;color:#fff}
   body.inspect-on #inspectPanel{display:block}
   body.inspect-on #controls,body.inspect-on #start,body.inspect-on #over,body.inspect-on #score,body.inspect-on #best,body.inspect-on #meter{display:none!important}
   body.inspect-on #inspectToggle{background:#56318d}
@@ -75,8 +77,7 @@
 <button id="inspectToggle" type="button">🔎 SCENERY</button>
 <div id="inspectPanel"><div>BACKGROUND INSPECTION · GAME PAUSED</div>
 <input id="inspectScrub" aria-label="Scroll scenery" type="range" min="0" max="16000" step="20" value="0">
-<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button><button id="inspectExit" type="button">RETURN TO GAME</button></div>
-<div>Drag slider to travel through the world. The logo stays in front.</div></div>
+<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button></div><div class="inspect-layers"><button id="inspectCastle" type="button" aria-pressed="false">🏰 SHOW TOON CASTLE</button><button id="inspectForeground" type="button" aria-pressed="true">⛰ HIDE FRONT RIDGE</button></div><div><button id="inspectExit" type="button">RETURN TO GAME</button></div><div>Castle starts hidden in inspection only. Tap to compare layers.</div></div>
 
 
 <div id="hud">
@@ -1814,12 +1815,12 @@ function v159DrawHazeAndMountains(){
   ctx.restore();
 
   // V161: gothic ruins between the two mountain planes; no animated tentacles yet.
-  v161DrawRuins();
+  if(!inspectMode || inspectShowCastle) v161DrawRuins();
 
   // V166: replace the old triangulated near mountains, don't stack over them.
   // One opaque-below-the-ridge landscape sampled from the original kingdom art.
   // Preserve gameplay and UI draw order. Slow independent parallax.
-  v159DrawMountainStrip(foregroundImg,H*.705,H*1.65,H*.31,.115,1);
+  if(!inspectMode || inspectShowForeground) v159DrawMountainStrip(foregroundImg,H*.705,H*1.65,H*.31,.115,1);
 
 }
 
@@ -2360,7 +2361,7 @@ function drawGalaxyArtLoopLegacyDisabled(){
   ctx.restore();
 }
 let inspectMode=false;
-let inspectWorld=0;
+let inspectWorld=0; let inspectShowCastle=false; let inspectShowForeground=true;
 const inspectScrub=document.getElementById('inspectScrub');
 function setInspectMode(on){
   inspectMode=on;
@@ -2373,6 +2374,17 @@ inspectScrub.addEventListener('input',()=>{inspectWorld=Number(inspectScrub.valu
 function inspectPan(delta){inspectWorld=Math.max(0,Math.min(16000,inspectWorld+delta));inspectScrub.value=inspectWorld;}
 document.getElementById('inspectBack').addEventListener('click',()=>inspectPan(-240));
 document.getElementById('inspectForward').addEventListener('click',()=>inspectPan(240));
+const inspectCastleBtn=document.getElementById('inspectCastle');
+const inspectForegroundBtn=document.getElementById('inspectForeground');
+function refreshInspectLayers(){
+  inspectCastleBtn.textContent=inspectShowCastle?'🏰 HIDE TOON CASTLE':'🏰 SHOW TOON CASTLE';
+  inspectCastleBtn.setAttribute('aria-pressed',String(inspectShowCastle));
+  inspectForegroundBtn.textContent=inspectShowForeground?'⛰ HIDE FRONT RIDGE':'⛰ SHOW FRONT RIDGE';
+  inspectForegroundBtn.setAttribute('aria-pressed',String(inspectShowForeground));
+}
+inspectCastleBtn.addEventListener('click',()=>{inspectShowCastle=!inspectShowCastle;refreshInspectLayers();});
+inspectForegroundBtn.addEventListener('click',()=>{inspectShowForeground=!inspectShowForeground;refreshInspectLayers();});
+refreshInspectLayers();
 
 function draw(){
  if(inspectMode){
