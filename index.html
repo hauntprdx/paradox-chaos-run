@@ -1,3 +1,4 @@
+<!-- V175: feather kingdom strip seam, visible Maw awakening + inspector test, Chaos-metal rhombus controls. -->
 <!-- V174: 35% larger original citadel/Maw panorama, awake Watcher, low source-art ridge. -->
 <!-- V173: citadel and Maw 20% larger, celestial crown chroma pass, soft abyss continuation. -->
 <!-- V167: background-only inspection mode, gameplay untouched. -->
@@ -67,6 +68,44 @@
   #controls{position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;padding:0 14px;z-index:4;pointer-events:none}
   .ctrl{pointer-events:auto;width:78px;height:62px;border:3px solid white;background:rgba(18,10,40,.78);color:white;font:900 13px monospace;box-shadow:4px 4px #000}
   #dash{width:108px}
+  /* V175: equal-sided diamond/rhombus buttons, metal edging from Chaos meter.
+     The labels stay horizontal and the original touch handlers are unchanged. */
+  #controls{bottom:calc(6px + env(safe-area-inset-bottom));padding:0 10px;align-items:flex-end}
+  #controls .ctrl{
+    position:relative;width:92px;height:92px;flex:0 0 auto;border:0;padding:0;
+    display:grid;place-items:center;overflow:hidden;
+    clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+    background:linear-gradient(135deg,#eefaff 0%,#8da0b8 17%,#393d68 31%,#e5b6ff 51%,#4be7ff 74%,#d5d9ed 100%);
+    box-shadow:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.8));
+    -webkit-appearance:none;appearance:none;
+  }
+  #controls .ctrl::before{
+    content:'';position:absolute;inset:4px;
+    clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+    background:linear-gradient(160deg,rgba(51,22,100,.94),rgba(7,8,33,.97) 52%,rgba(45,18,86,.94));
+  }
+  #controls .ctrl::after{
+    content:'';position:absolute;inset:10px;
+    clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+    border:0;background:linear-gradient(155deg,rgba(129,67,230,.19),transparent 55%,rgba(57,216,255,.13));
+  }
+  #controls .ctrl-label{
+    position:relative;z-index:2;display:block;text-align:center;line-height:1.4;
+    font:900 13px monospace;letter-spacing:.25px;color:#e7eeff;
+    background:linear-gradient(90deg,#d3c3ff 0%,#f6c5ff 28%,#bfc7ff 58%,#6cf1ff 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.8));
+  }
+  #controls #dash{width:106px;height:106px}
+  #controls #dash .ctrl-label{font-size:11px;letter-spacing:-.35px}
+  #controls .ctrl:active{transform:scale(.95);box-shadow:none}
+  @media(max-height:480px){
+    #controls .ctrl{width:82px;height:82px}
+    #controls #dash{width:96px;height:96px}
+    #controls .ctrl-label{font-size:12px}
+    #controls #dash .ctrl-label{font-size:10px}
+  }
+  body.maw-preview #inspectPanel{display:none!important}
   .hide{display:none!important}
 
   #inspectToggle{position:fixed;z-index:9;top:calc(66px + env(safe-area-inset-top));right:12px;padding:7px 10px;font:700 10px monospace;border:1px solid #9e80c9;background:rgba(17,8,39,.87);box-shadow:none;border-radius:5px;color:#e9d7ff}
@@ -91,7 +130,7 @@
 <button id="inspectToggle" type="button">🔎 SCENERY</button>
 <div id="inspectPanel"><div>BACKGROUND INSPECTION · GAME PAUSED</div>
 <input id="inspectScrub" aria-label="Scroll scenery" type="range" min="0" max="16000" step="20" value="0">
-<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button></div><div class="inspect-layers"><button id="inspectCastle" type="button" aria-pressed="false">🏰 SHOW TOON CASTLE</button><button id="inspectForeground" type="button" aria-pressed="true">⛰ HIDE FRONT RIDGE</button></div><div><button id="inspectExit" type="button">RETURN TO GAME</button></div><div class="inspect-note">Original painted ruins active. Toon castle retired.</div></div>
+<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button></div><div class="inspect-layers"><button id="inspectCastle" type="button" aria-pressed="false">🏰 SHOW TOON CASTLE</button><button id="inspectForeground" type="button" aria-pressed="true">⛰ HIDE FRONT RIDGE</button></div><div><button id="inspectWakeMaw" type="button">👁 WAKE MAW · TEST</button><button id="inspectExit" type="button">RETURN TO GAME</button></div><div class="inspect-note">Original painted ruins active. Toon castle retired.</div></div>
 
 
 <div id="hud">
@@ -104,8 +143,8 @@
 </div>
 
 <div id="controls">
-  <button class="ctrl" id="jump">JUMP</button>
-  <button class="ctrl" id="dash">HEADBUTT →</button>
+  <button class="ctrl" id="jump" aria-label="Jump"><span class="ctrl-label">JUMP</span></button>
+  <button class="ctrl" id="dash" aria-label="Headbutt"><span class="ctrl-label">HEADBUTT<br>→</span></button>
 </div>
 
 <div id="start">
@@ -1798,9 +1837,33 @@ function v159DrawMountainStrip(img,topY,drawW,drawH,speed,alpha){
 // citadels and double-curled Maw formation, without scaling any gameplay art.
 // The parallax strip's aspect ratio stays identical. This is one continuous
 // solid artwork layer, not a transparent overlay or a new cartoon silhouette.
+// V175: cache a soft-bottomed copy of the SAME approved painted panorama.
+// The source's opaque final row was making a straight horizontal cut at ~92% H.
+// Feather only the bottom 14%, preserving all painted spires and upper Maw details.
+let v175FeatheredKingdom=null;
+let v175FeatheredFrom=null;
+function v175KingdomImage(img){
+  if(!img.complete||!img.naturalWidth)return null;
+  if(v175FeatheredKingdom&&v175FeatheredFrom===img)return v175FeatheredKingdom;
+  const c=document.createElement('canvas');
+  c.width=img.naturalWidth;c.height=img.naturalHeight;
+  const g=c.getContext('2d');
+  g.drawImage(img,0,0);
+  g.globalCompositeOperation='destination-in';
+  const fade=g.createLinearGradient(0,c.height*.86,0,c.height);
+  fade.addColorStop(0,'rgba(0,0,0,1)');
+  fade.addColorStop(.48,'rgba(0,0,0,.91)');
+  fade.addColorStop(.79,'rgba(0,0,0,.48)');
+  fade.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=fade;g.fillRect(0,0,c.width,c.height);
+  v175FeatheredKingdom=c;v175FeatheredFrom=img;
+  return c;
+}
 function v171DrawEnlargedKingdom(){
   const img=v159FarMountainImage;
   if(!img.complete||!img.naturalWidth)return;
+  const kingdomPaint=v175KingdomImage(img);
+  if(!kingdomPaint)return;
   // V173: +20% relative to V172. Citadel and Maw are part of one
   // original continuous painted panorama, so the increase remains seamless.
   // V174: user-directed +35% on top of V173's citadel and Maw panorama.
@@ -1812,13 +1875,14 @@ function v171DrawEnlargedKingdom(){
   ctx.save();ctx.imageSmoothingEnabled=false;
   for(let x=-scroll-dw;x<W+dw;x+=dw){
     const sx=Math.round(x),sy=Math.round(top);
-    ctx.drawImage(img,sx,sy,Math.ceil(dw)+1,Math.ceil(dh));
+    ctx.drawImage(kingdomPaint,sx,sy,Math.ceil(dw)+1,Math.ceil(dh));
     // This glow belongs to the CENTRAL double-curled Maw in the source image,
     // not the distant single curls beside the two citadels.
     v171DrawWatcherAt(sx,sy,dw,dh,img.naturalWidth,img.naturalHeight);
   }
   ctx.restore();
 }
+let v175MawTestUntil=0;
 function v171DrawWatcherAt(x,y,dw,dh,iw,ih){
   // V174: Watcher lives at the CENTRAL double-curled Maw in the original art.
   const mx=x+dw*(768/iw),my=y+dh*(167/ih);
@@ -1826,11 +1890,11 @@ function v171DrawWatcherAt(x,y,dw,dh,iw,ih){
   const t=performance.now()*.001;
   // No longer asleep for 25 seconds at a time: a slow, always-present
   // breathing glow, with a clear eight-second awakening every 14 seconds.
-  const phase=(t+3)%14;
+  const phase=(t+3)%12;
   const smooth=(v)=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);};
-  const awake=smooth((phase-1)/1.6)*(1-smooth((phase-9)/2));
+  const awake=Math.max(performance.now()<v175MawTestUntil?1:0, smooth((phase-.5)/1.2)*(1-smooth((phase-8)/1.8)));
   const breath=.5+.5*Math.sin(t*.72);
-  const power=.19+.18*breath+.63*awake;
+  const power=.34+.17*breath+.49*awake;
   const scale=dw/iw;
   const eyeY=my+4*scale;
   const eyeSep=18*scale;
@@ -1849,6 +1913,20 @@ function v171DrawWatcherAt(x,y,dw,dh,iw,ih){
     ctx.fillStyle='#ff65ef';ctx.beginPath();ctx.ellipse(ex,eyeY,ew,eh,0,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=.38*power;
     ctx.fillStyle='#ffdeff';ctx.fillRect(Math.round(ex),Math.round(eyeY),Math.max(1,scale*.65),Math.max(1,scale*.65));
+  }
+  // Two ancient curls slowly pulse, like something enormous breathing below.
+  // Locations are derived from the central Maw in the original 1536x208 art.
+  for(const side of [-1,1]){
+    const tipX=mx+side*144*scale;
+    const tipY=y+dh*(151/ih);
+    const tipRadius=Math.max(6,18*scale);
+    const wave=.5+.5*Math.sin(t*.95+side*.85);
+    const tip=ctx.createRadialGradient(tipX,tipY,0,tipX,tipY,tipRadius);
+    tip.addColorStop(0,`rgba(246,100,255,${(.34*power+.11*wave).toFixed(3)})`);
+    tip.addColorStop(.4,`rgba(137,42,234,${(.13*power).toFixed(3)})`);
+    tip.addColorStop(1,'rgba(90,12,120,0)');
+    ctx.globalAlpha=1;ctx.fillStyle=tip;
+    ctx.fillRect(tipX-tipRadius,tipY-tipRadius,tipRadius*2,tipRadius*2);
   }
   // Brief living-crack shimmer, confined to existing Maw stone.
   ctx.globalAlpha=.19*power;
@@ -2607,8 +2685,17 @@ function refreshInspectLayers(){
 inspectCastleBtn.addEventListener('click',()=>{inspectShowCastle=!inspectShowCastle;refreshInspectLayers();});
 inspectForegroundBtn.addEventListener('click',()=>{inspectShowForeground=!inspectShowForeground;refreshInspectLayers();});
 refreshInspectLayers();
+document.getElementById('inspectWakeMaw').addEventListener('click',()=>{
+  // Pan to the painted CENTRAL double-curled Maw and hold its awakening for 7s.
+  const dw=H*1.95*2.106;
+  inspectWorld=Math.max(0,Math.min(16000,(dw*.5-W*.5)/.075));
+  inspectScrub.value=String(Math.round(inspectWorld/20)*20);
+  v175MawTestUntil=performance.now()+7000;
+  document.body.classList.add('maw-preview');
+});
 
 function draw(){
+ if(document.body.classList.contains('maw-preview')&&performance.now()>v175MawTestUntil)document.body.classList.remove('maw-preview');
  if(inspectMode){
    // Only background. Temporarily shift the world coordinate for parallax,
    // then restore it before any gameplay resumes.
