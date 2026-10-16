@@ -8,6 +8,9 @@
 <!-- V161: distant kingdom ruins only; V160 ledge physics and V155 platform artwork preserved. -->
 <!-- V160: visible deck support bounds. V159 mountains, moon, platforms, assets preserved. -->
 <!-- V159: moon companion +25%, source-inspired infinite mountain parallax + valley haze. V155 gameplay/platforms locked. -->
+<!-- V171: Shattered Crown sky, 30% larger original kingdom formations, dormant Watcher eyes, toon castle hidden. -->
+<style>#inspectCastle{display:none!important}</style>
+<!-- V170: subtle constellation and aurora added to sky only. -->
 <!-- V158 SECTION 2: opaque painted moons, V157 sky + V155 gameplay/platform lock preserved. -->
 <!-- V157 BACKGROUND SECTION 1 FIX: legacy duplicate renderer disabled. V155 gameplay/platform lock preserved. -->
 <!-- V123: seam-safe rollback to V121 platform renderer; V122 slice experiment removed. -->
@@ -85,7 +88,7 @@
 <button id="inspectToggle" type="button">🔎 SCENERY</button>
 <div id="inspectPanel"><div>BACKGROUND INSPECTION · GAME PAUSED</div>
 <input id="inspectScrub" aria-label="Scroll scenery" type="range" min="0" max="16000" step="20" value="0">
-<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button></div><div class="inspect-layers"><button id="inspectCastle" type="button" aria-pressed="false">🏰 SHOW TOON CASTLE</button><button id="inspectForeground" type="button" aria-pressed="true">⛰ HIDE FRONT RIDGE</button></div><div><button id="inspectExit" type="button">RETURN TO GAME</button></div><div class="inspect-note">Castle starts hidden in inspection only. Tap to compare layers.</div></div>
+<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button></div><div class="inspect-layers"><button id="inspectCastle" type="button" aria-pressed="false">🏰 SHOW TOON CASTLE</button><button id="inspectForeground" type="button" aria-pressed="true">⛰ HIDE FRONT RIDGE</button></div><div><button id="inspectExit" type="button">RETURN TO GAME</button></div><div class="inspect-note">Original painted ruins active. Toon castle retired.</div></div>
 
 
 <div id="hud">
@@ -1788,6 +1791,71 @@ function v159DrawMountainStrip(img,topY,drawW,drawH,speed,alpha){
   ctx.restore();
 }
 
+// V171: enlarge the ORIGINAL painted mountain strip, including its natural
+// citadels and double-curled Maw formation, without scaling any gameplay art.
+// The parallax strip's aspect ratio stays identical. This is one continuous
+// solid artwork layer, not a transparent overlay or a new cartoon silhouette.
+function v171DrawEnlargedKingdom(){
+  const img=v159FarMountainImage;
+  if(!img.complete||!img.naturalWidth)return;
+  const factor=1.30;
+  const dw=H*1.95*factor, dh=H*.265*factor;
+  const top=H*.575-(dh-H*.265)*.72;
+  const scroll=((world*.075)%dw+dw)%dw;
+  ctx.save();ctx.imageSmoothingEnabled=false;
+  for(let x=-scroll-dw;x<W+dw;x+=dw){
+    const sx=Math.round(x),sy=Math.round(top);
+    ctx.drawImage(img,sx,sy,Math.ceil(dw)+1,Math.ceil(dh));
+    // This glow belongs to the CENTRAL double-curled Maw in the source image,
+    // not the distant single curls beside the two citadels.
+    v171DrawWatcherAt(sx,sy,dw,dh,img.naturalWidth,img.naturalHeight);
+  }
+  ctx.restore();
+}
+function v171DrawWatcherAt(x,y,dw,dh,iw,ih){
+  const mx=x+dw*(768/iw);
+  const my=y+dh*(167/ih);
+  if(mx<-dw*.08||mx>W+dw*.08)return;
+  const t=performance.now()*.001;
+  // Mostly asleep: a six-second wake window in a 31-second cycle.
+  // Soft fade in/out, no sudden jumps and no gameplay consequences.
+  const phase=(t+4)%31;
+  const smooth=(v)=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);};
+  const awake=smooth((phase-2)/1.8)*(1-smooth((phase-8)/2.2));
+  if(awake<.003)return;
+  const scale=dw/iw;
+  const breathe=.74+.26*Math.sin(t*1.1);
+  const power=awake*breathe;
+  // Eye centers sit inside the dark crevice of the original painted Maw.
+  const eyeSep=17*scale;
+  const eyeY=my+5*scale;
+  const track=Math.max(-2.4,Math.min(2.4,(P.x-mx)*.012));
+  ctx.save();ctx.globalCompositeOperation='screen';
+  const glow=ctx.createRadialGradient(mx,eyeY,0,mx,eyeY,38*scale);
+  glow.addColorStop(0,`rgba(188,30,217,${(.13*power).toFixed(3)})`);
+  glow.addColorStop(.4,`rgba(131,24,170,${(.065*power).toFixed(3)})`);
+  glow.addColorStop(1,'rgba(90,12,124,0)');
+  ctx.fillStyle=glow;ctx.fillRect(mx-38*scale,eyeY-38*scale,76*scale,76*scale);
+  for(const side of [-1,1]){
+    const ex=mx+side*eyeSep+track;
+    const ew=Math.max(1.5,2.1*scale),eh=Math.max(1.3,1.5*scale);
+    ctx.globalAlpha=.74*power;
+    ctx.fillStyle='#f24bfa';
+    ctx.beginPath();ctx.ellipse(ex,eyeY,ew,eh,0,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.32*power;
+    ctx.fillStyle='#ffb8f9';ctx.fillRect(Math.round(ex),Math.round(eyeY),1.5,1.5);
+  }
+  // One faint mineral pulse in the surrounding stone, not a whole moving mountain.
+  if(awake>.35){
+    ctx.globalAlpha=.13*power;
+    ctx.strokeStyle='#dc4af4';ctx.lineWidth=Math.max(1,scale*.7);
+    ctx.beginPath();ctx.moveTo(mx-45*scale,my+23*scale);
+    ctx.lineTo(mx-27*scale,my+16*scale);ctx.lineTo(mx-8*scale,my+24*scale);
+    ctx.lineTo(mx+17*scale,my+20*scale);ctx.lineTo(mx+43*scale,my+27*scale);ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // V161: isolated distant ruined kingdom silhouettes, no gameplay changes.
 const v161RuinImage=new Image();
 v161RuinImage.src="data:image/png;base64,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";
@@ -1811,7 +1879,7 @@ function v159DrawHazeAndMountains(){
 
   // Layer 1: actual mountain material sampled from the approved cosmic kingdom art.
   // Wide, slow and muted so the stars and moons retain their sense of distance.
-  v159DrawMountainStrip(v159FarMountainImage,H*.575,H*1.95,H*.265,.075,1);
+  v171DrawEnlargedKingdom();
 
   // A thin band of valley mist between far and near rock silhouettes.
   ctx.save();
@@ -1823,13 +1891,68 @@ function v159DrawHazeAndMountains(){
   ctx.restore();
 
   // V161: gothic ruins between the two mountain planes; no animated tentacles yet.
-  if(!inspectMode || inspectShowCastle) v161DrawRuins();
+  // V171: original painted citadel replaces the flat toon castle in every mode.
+  // v161DrawRuins() deliberately not called.
 
   // V166: replace the old triangulated near mountains, don't stack over them.
   // One opaque-below-the-ridge landscape sampled from the original kingdom art.
   // Preserve gameplay and UI draw order. Slow independent parallax.
   if(!inspectMode || inspectShowForeground) v159DrawMountainStrip(foregroundImg,H*.705,H*1.65,H*.31,.115,1);
 
+}
+
+// V170: subtle ancient sky glyph and auroral atmosphere. Scenery only.
+// All coordinates are normalized so portrait/landscape share the same composition.
+// V171: the chosen Shattered Crown, deliberately restrained at gameplay scale.
+// The sparse seven-star arc sits high above the painted world and behind moons.
+function v170DrawCelestialMarking(){
+  const t=performance.now()*.001;
+  const portrait=isPortrait();
+  ctx.save();
+  ctx.globalCompositeOperation='screen';
+  const pts=portrait?
+    [[.08,.305],[.19,.254],[.30,.217],[.42,.191],[.54,.207],[.67,.247],[.80,.294]]:
+    [[.13,.29],[.24,.225],[.36,.18],[.49,.16],[.62,.18],[.74,.225],[.86,.29]];
+  const points=pts.map(([x,y])=>[W*x,H*y]);
+  // A broken, gauzy auroral arc, not a solid bright ribbon.
+  for(let i=0;i<6;i++){
+    const [ax,ay]=points[i], [bx,by]=points[i+1];
+    const midx=(ax+bx)*.5, midy=(ay+by)*.5-H*.013;
+    const pulse=.85+.15*Math.sin(t*.18+i*.8);
+    const grad=ctx.createLinearGradient(ax,ay,bx,by);
+    grad.addColorStop(0,`rgba(113,64,195,${(.04*pulse).toFixed(3)})`);
+    grad.addColorStop(.52,`rgba(${i%2?'80,185,217':'175,62,208'},${(.11*pulse).toFixed(3)})`);
+    grad.addColorStop(1,`rgba(105,55,185,${(.035*pulse).toFixed(3)})`);
+    ctx.strokeStyle=grad;ctx.lineWidth=Math.max(9,H*.022);
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(midx,midy,bx,by);ctx.stroke();
+    // Fractured thin stellar filaments: one deliberate gap in the crown.
+    if(i!==3){
+      ctx.strokeStyle=`rgba(164,124,238,${(.16*pulse).toFixed(3)})`;
+      ctx.lineWidth=portrait?.7:1;
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.quadraticCurveTo(midx,midy,bx,by);ctx.stroke();
+    }
+  }
+  // Exactly seven principal stars, with a few quiet pinpoints around the crown.
+  points.forEach(([x,y],i)=>{
+    const tw=.76+.24*Math.sin(t*(.45+i*.035)+i*2.1);
+    const center=i===3;
+    ctx.globalAlpha=(center?.68:.42)*tw;
+    ctx.fillStyle=i%3===1?'#a5e7f7':'#f1d9ff';
+    const size=center?3:2;
+    ctx.fillRect(Math.round(x-size/2),Math.round(y-size/2),size,size);
+    if(i===1||i===3||i===5){
+      ctx.globalAlpha=.15*tw;
+      ctx.fillRect(Math.round(x-5),Math.round(y),10,1);
+      ctx.fillRect(Math.round(x),Math.round(y-5),1,10);
+    }
+  });
+  ctx.globalAlpha=.3;
+  for(let i=0;i<11;i++){
+    const xx=W*(.12+((i*37)%79)/100),yy=H*(.14+((i*23)%22)/100);
+    ctx.fillStyle=i%3===0?'#7cbadf':'#aa86d8';
+    ctx.fillRect(Math.round(xx),Math.round(yy),1,1);
+  }
+  ctx.restore();
 }
 
 function drawGalaxyArtLoop(){
@@ -1908,6 +2031,9 @@ function drawGalaxyArtLoop(){
     ctx.fillRect(Math.round(x),Math.round(y),1,1);
   }
   ctx.restore();
+
+  // V170: faint ancient constellation and auroral wash, below the moons.
+  v170DrawCelestialMarking();
 
   // V158 moons remain behind the world and HUD, companion enlarged by 25%.
   v158DrawMoons();
@@ -2385,8 +2511,8 @@ document.getElementById('inspectForward').addEventListener('click',()=>inspectPa
 const inspectCastleBtn=document.getElementById('inspectCastle');
 const inspectForegroundBtn=document.getElementById('inspectForeground');
 function refreshInspectLayers(){
-  inspectCastleBtn.textContent=inspectShowCastle?'🏰 HIDE TOON CASTLE':'🏰 SHOW TOON CASTLE';
-  inspectCastleBtn.setAttribute('aria-pressed',String(inspectShowCastle));
+  inspectCastleBtn.textContent='🏰 TOON CASTLE HIDDEN';
+  inspectCastleBtn.setAttribute('aria-pressed','false');inspectCastleBtn.disabled=true;
   inspectForegroundBtn.textContent=inspectShowForeground?'⛰ HIDE FRONT RIDGE':'⛰ SHOW FRONT RIDGE';
   inspectForegroundBtn.setAttribute('aria-pressed',String(inspectShowForeground));
 }
