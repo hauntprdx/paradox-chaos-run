@@ -1,4 +1,5 @@
 <!-- V167: background-only inspection mode, gameplay untouched. -->
+<!-- V169: compact mobile scenery inspector, same layer controls and gameplay. -->
 <!-- V168: inspector layer toggles, castle hidden by default only while inspecting. -->
 <!-- V166: single organic near foreground replaces triangular layers. -->
 <!-- V165: solid foreground cliff cleanup; V164 base preserved. -->
@@ -63,10 +64,17 @@
   .hide{display:none!important}
 
   #inspectToggle{position:fixed;z-index:9;top:calc(66px + env(safe-area-inset-top));right:12px;padding:7px 10px;font:700 10px monospace;border:1px solid #9e80c9;background:rgba(17,8,39,.87);box-shadow:none;border-radius:5px;color:#e9d7ff}
-  #inspectPanel{display:none;position:fixed;z-index:9;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(94vw,470px);padding:10px;background:rgba(8,5,26,.89);border:1px solid #8d6ab6;border-radius:8px;color:white;font:11px monospace;text-align:center}
-  #inspectPanel button{padding:9px 14px;font-size:12px;box-shadow:none;border:1px solid #ad91db;margin:4px}
-  #inspectPanel input{width:95%;accent-color:#b866ff}
-  #inspectPanel .inspect-layers{display:flex;justify-content:center;flex-wrap:wrap;gap:4px} #inspectPanel .inspect-layers button{font-size:10px;padding:9px 8px;flex:1;min-width:145px} #inspectPanel .inspect-layers button[aria-pressed="false"]{background:#382454;color:#f1dcff} #inspectPanel .inspect-layers button[aria-pressed="true"]{background:#624096;color:#fff}
+  /* V169: slim inspection console, leaving the scenery visible on phones. */
+  #inspectPanel{display:none;position:fixed;z-index:9;bottom:calc(7px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(92vw,440px);padding:5px 7px 6px;background:rgba(8,5,26,.86);border:1px solid #8d6ab6;border-radius:7px;color:white;font:9px monospace;text-align:center;line-height:1.15}
+  #inspectPanel button{padding:5px 7px;font-size:10px;box-shadow:none;border:1px solid #ad91db;margin:2px;min-height:27px}
+  #inspectPanel input{display:block;width:96%;height:16px;margin:2px auto 3px;accent-color:#b866ff}
+  #inspectPanel .inspect-layers{display:flex;justify-content:center;flex-wrap:nowrap;gap:3px}
+  #inspectPanel .inspect-layers button{font-size:9px;padding:5px 4px;flex:1;min-width:0;white-space:nowrap}
+  #inspectPanel .inspect-layers button[aria-pressed="false"]{background:#382454;color:#f1dcff}
+  #inspectPanel .inspect-layers button[aria-pressed="true"]{background:#624096;color:#fff}
+  #inspectPanel .inspect-note{display:none}
+  #inspectPanel #inspectExit{padding:5px 12px;font-size:9px;min-height:25px}
+  @media(max-width:370px){#inspectPanel .inspect-layers button{font-size:8px}#inspectPanel{width:96vw}}
   body.inspect-on #inspectPanel{display:block}
   body.inspect-on #controls,body.inspect-on #start,body.inspect-on #over,body.inspect-on #score,body.inspect-on #best,body.inspect-on #meter{display:none!important}
   body.inspect-on #inspectToggle{background:#56318d}
@@ -77,7 +85,7 @@
 <button id="inspectToggle" type="button">🔎 SCENERY</button>
 <div id="inspectPanel"><div>BACKGROUND INSPECTION · GAME PAUSED</div>
 <input id="inspectScrub" aria-label="Scroll scenery" type="range" min="0" max="16000" step="20" value="0">
-<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button></div><div class="inspect-layers"><button id="inspectCastle" type="button" aria-pressed="false">🏰 SHOW TOON CASTLE</button><button id="inspectForeground" type="button" aria-pressed="true">⛰ HIDE FRONT RIDGE</button></div><div><button id="inspectExit" type="button">RETURN TO GAME</button></div><div>Castle starts hidden in inspection only. Tap to compare layers.</div></div>
+<div><button id="inspectBack" type="button">◀ PAN</button><button id="inspectForward" type="button">PAN ▶</button></div><div class="inspect-layers"><button id="inspectCastle" type="button" aria-pressed="false">🏰 SHOW TOON CASTLE</button><button id="inspectForeground" type="button" aria-pressed="true">⛰ HIDE FRONT RIDGE</button></div><div><button id="inspectExit" type="button">RETURN TO GAME</button></div><div class="inspect-note">Castle starts hidden in inspection only. Tap to compare layers.</div></div>
 
 
 <div id="hud">
