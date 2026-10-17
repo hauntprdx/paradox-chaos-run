@@ -1,3 +1,4 @@
+<!-- V190: rare Maw awakening, one-time narwhal sighting and rarer Void Stalker encounters; scoring unchanged pending decision. -->
 <!-- V189c: approved pose elbow alpha repair only, original sprites and behavior preserved. -->
 <!-- V189b: extraction-only transparency cleanup, no gameplay or design edits. -->
 <!-- V189: approved original six-cel concept-sheet poses extracted directly; Classic Paradox gameplay sprites preserved. -->
@@ -557,6 +558,10 @@ let running=false, dead=false, deathTime=0, deathBottom=0, deathOverShown=false,
 let world=0, speed=280, chaos=0, beam=0, chaosLockout=0, shake=0, spawnX=0, speedMult=1, nextSpeedScore=180;
 const HOME_X=108, DASH_MAX_X=285;
 let platforms=[], hazards=[], particles=[], debris=[], shockwaves=[], stars=[], narwhal=null, narwhalTimer=0, lastSpikeScore=-9999;
+// V190: independent per-run encounter state; no changes to gameplay sprites or collision physics.
+let mawChosenForRun=false, mawTriggerWorld=0, mawAwakened=false, mawAwakenAt=-1;
+let narwhalChosenForRun=false, narwhalVisited=false;
+let lastStalkerSpawnX=-100000;
 let pointer={x:0,y:0,t:0};
 
 const P={
@@ -567,7 +572,14 @@ const P={
 function reset(){
  running=true; dead=false; deathTime=0; deathBottom=0; deathOverShown=false; score=0; world=0; speed=280; chaos=0; beam=0; chaosLockout=0; shake=0; speedMult=1; nextSpeedScore=180;
  last=performance.now(); pointer={x:0,y:0,t:0};
- particles=[]; debris=[]; shockwaves=[]; hazards=[]; narwhal=null; narwhalTimer=18+Math.random()*10; lastSpikeScore=-9999;
+ particles=[]; debris=[]; shockwaves=[]; hazards=[]; narwhal=null;
+  // Maw and narwhal are deliberately not guaranteed in every playthrough.
+  mawChosenForRun=Math.random()<.26;
+  mawTriggerWorld=1400+Math.random()*1700;
+  mawAwakened=false; mawAwakenAt=-1;
+  narwhalChosenForRun=Math.random()<.30;
+  narwhalVisited=false; narwhalTimer=15+Math.random()*22;
+  lastStalkerSpawnX=-100000; lastSpikeScore=-9999;
  bgSeed=Math.random();
  P.x=HOME_X; P.vy=0; P.jumps=0; P.coyote=0; P.dash=0; P.dashCooldown=0; P.invuln=0; P.jumpAnim=0; P.jumpKind=0; P.jumpVisual=0; P.landVisual=0; P.runAnimT=0;
  const floorY=playFloorY();
@@ -751,6 +763,12 @@ function addHazardOnPlatform(p,type,pos=.55){
  // V60: the Orbital Pod/barrier archetype is retired.
  // Any legacy barrier request is converted into the official Ringed Planet breakaway.
  if(type==='barrier') type='table';
+  // Stalkers are genuine sightings, not ordinary furniture: reduce the roll
+  // and space any appearances apart. Preserve route challenge with a planet.
+  if(type==='enemy'){
+    if(p.x-lastStalkerSpawnX<2600 || Math.random()<.57) type='table';
+    else lastStalkerSpawnX=p.x;
+  }
  const hh=type==='table'?34:type==='enemy'?42:type==='crystal'?35:type==='spike'?24:46;
  const ww=type==='table'?48:type==='enemy'?40:type==='crystal'?34:type==='spike'?54:52;
  const elite=type==='enemy' && score>=15000 && Math.random()<.22;
@@ -1093,13 +1111,15 @@ function update(dt){
    s.x-=speed*dt*s.s*.12;
    if(s.x<world-100)s.x=world+W+Math.random()*400;
  }
- // V177: guaranteed but infrequent Narwhal visit, decorative only.
+ // V190: majestic idiot cameo, chosen once per run with no repeat visits.
  if(!narwhal){
-   narwhalTimer-=dt;
-   if(narwhalTimer<=0){
-     narwhal={screenX:W+125,y:Math.max(140,Math.min(H*.46,105+Math.random()*H*.25)),
-       w:Math.min(250,Math.max(165,W*.32)),vx:48+Math.random()*25,life:18};
-     narwhalTimer=55+Math.random()*35;
+   if(narwhalChosenForRun && !narwhalVisited){
+     narwhalTimer-=dt;
+     if(narwhalTimer<=0){
+       narwhal={screenX:W+125,y:Math.max(140,Math.min(H*.46,105+Math.random()*H*.25)),
+         w:Math.min(250,Math.max(165,W*.32)),vx:48+Math.random()*25,life:18};
+       narwhalVisited=true;
+     }
    }
  }else{
    narwhal.screenX-=narwhal.vx*dt;narwhal.life-=dt;
@@ -2242,9 +2262,15 @@ v178MawEyeImage.src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAABVCAYAA
    const t=performance.now()*.001;
    const test=performance.now()<v175MawTestUntil;
    const smooth=v=>{v=Math.max(0,Math.min(1,v));return v*v*(3-2*v);};
-   // Short awakening every 10s; Scenery test holds it awake.
-   const phase=(t+2)%10;
-   const awake=test?1:smooth((phase-.65)/1.2)*(1-smooth((phase-7.8)/1.0));
+   // V190: only a minority of runs can wake the eye, and only once.
+   // Time starts when the source painting's eye is actually on-screen.
+   if(!test && running && !dead && mawChosenForRun && !mawAwakened &&
+      world>=mawTriggerWorld && cx>W*.16 && cx<W*.84){
+     mawAwakened=true;
+     mawAwakenAt=t;
+   }
+   const phase=mawAwakenAt<0?-1:t-mawAwakenAt;
+   const awake=test?1:(phase<0?0:smooth((phase-.18)/.75)*(1-smooth((phase-3.8)/.95)));
    const blinkPhase=(t+1.3)%5.1;
    const blink=blinkPhase>4.58?Math.max(.025,Math.abs(blinkPhase-4.83)/.25):1;
    const opening=Math.max(.015,awake*blink);
