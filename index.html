@@ -1325,8 +1325,8 @@ function update(dt){
      P.dashCooldown=Math.min(P.dashCooldown,.20);
    }
 
-   const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 9 : h.type==='crystal' ? 17 : h.type==='spike' ? 0 : 11;
-   const scoreGain = h.type==='crystal' ? 300 : h.type==='enemy' ? 220 : h.type==='barrier' ? 260 : h.type==='spike' ? 180 : 150;
+   const chaosGain = h.type==='table' ? 5 : h.type==='enemy' ? 17 : h.type==='crystal' ? 9 : h.type==='spike' ? 0 : 11;
+   const scoreGain = h.type==='crystal' ? 220 : h.type==='enemy' ? 300 : h.type==='barrier' ? 260 : h.type==='spike' ? 180 : 150;
    score+=scoreGain;
 
    // No Chaos gain during Beam or during post-Beam recovery.
